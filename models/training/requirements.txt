@@ -2,19 +2,19 @@
 # Hardware Target: 8x NVIDIA A100/H100 (80GB) multi-node cluster
 
 # Core Training Framework
-torch==2.3.0
+torch==2.13.0
 torchvision==0.18.0
 
 # Hugging Face Ecosystem
-transformers==4.41.0
+transformers==5.10.1
 tokenizers==0.19.1
 datasets==2.20.0
-accelerate==0.31.0
+accelerate==1.15.0
 peft==0.11.0
 trl==0.9.4
 
 # Distributed Training & Optimization
-deepspeed==0.14.4
+deepspeed==0.19.7
 flash-attn==2.5.8  # FlashAttention-2 (Step 107)
 
 # Mixed Precision & Quantization (Steps 101, 118)
@@ -26,7 +26,7 @@ comet==2.2.2
 rouge-score==0.1.2
 
 # Data & Serialization (Step 89)
-pyarrow==16.1.0
+pyarrow==23.0.1
 pandas==2.2.2
 numpy==1.26.4
 
@@ -35,4 +35,4 @@ wandb==0.17.3
 tensorboard==2.17.0
 
 # Testing
-pytest==8.2.2
+pytest==9.0.3
