@@ -1,0 +1,385 @@
+# Eight Council OS domain service boundaries (staging).
+# Independent health, logging, and rollback per domain.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-identity
+  namespace: staging
+  labels:
+    app: council-os
+    domain: identity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: identity
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: identity
+    spec:
+      containers:
+      - name: identity
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8101
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "identity"
+        - name: COUNCIL_OS_PORT
+          value: "8101"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8101
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-identity
+  namespace: staging
+spec:
+  selector:
+    domain: identity
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8101
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-ledger
+  namespace: staging
+  labels:
+    app: council-os
+    domain: ledger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: ledger
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: ledger
+    spec:
+      containers:
+      - name: ledger
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8102
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "ledger"
+        - name: COUNCIL_OS_PORT
+          value: "8102"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8102
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-ledger
+  namespace: staging
+spec:
+  selector:
+    domain: ledger
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8102
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-linguistic-nlp
+  namespace: staging
+  labels:
+    app: council-os
+    domain: linguistic_nlp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: linguistic_nlp
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: linguistic_nlp
+    spec:
+      containers:
+      - name: linguistic-nlp
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8103
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "linguistic_nlp"
+        - name: COUNCIL_OS_PORT
+          value: "8103"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8103
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-linguistic-nlp
+  namespace: staging
+spec:
+  selector:
+    domain: linguistic_nlp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8103
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-textual-criticism
+  namespace: staging
+  labels:
+    app: council-os
+    domain: textual_criticism
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: textual_criticism
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: textual_criticism
+    spec:
+      containers:
+      - name: textual-criticism
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8104
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "textual_criticism"
+        - name: COUNCIL_OS_PORT
+          value: "8104"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8104
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-textual-criticism
+  namespace: staging
+spec:
+  selector:
+    domain: textual_criticism
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8104
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-scout-edge
+  namespace: staging
+  labels:
+    app: council-os
+    domain: scout_edge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: scout_edge
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: scout_edge
+    spec:
+      containers:
+      - name: scout-edge
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8105
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "scout_edge"
+        - name: COUNCIL_OS_PORT
+          value: "8105"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8105
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-scout-edge
+  namespace: staging
+spec:
+  selector:
+    domain: scout_edge
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8105
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-governance
+  namespace: staging
+  labels:
+    app: council-os
+    domain: governance
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: governance
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: governance
+    spec:
+      containers:
+      - name: governance
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8106
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "governance"
+        - name: COUNCIL_OS_PORT
+          value: "8106"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8106
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-governance
+  namespace: staging
+spec:
+  selector:
+    domain: governance
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8106
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-treasury
+  namespace: staging
+  labels:
+    app: council-os
+    domain: treasury
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: treasury
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: treasury
+    spec:
+      containers:
+      - name: treasury
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8107
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "treasury"
+        - name: COUNCIL_OS_PORT
+          value: "8107"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8107
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-treasury
+  namespace: staging
+spec:
+  selector:
+    domain: treasury
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8107
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: council-os-sentinel
+  namespace: staging
+  labels:
+    app: council-os
+    domain: sentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      domain: sentinel
+  template:
+    metadata:
+      labels:
+        app: council-os
+        domain: sentinel
+    spec:
+      containers:
+      - name: sentinel
+        image: your-registry/council-os:latest
+        ports:
+        - containerPort: 8108
+        env:
+        - name: COUNCIL_OS_DOMAIN
+          value: "sentinel"
+        - name: COUNCIL_OS_PORT
+          value: "8108"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8108
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: council-os-sentinel
+  namespace: staging
+spec:
+  selector:
+    domain: sentinel
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8108
+  type: ClusterIP
