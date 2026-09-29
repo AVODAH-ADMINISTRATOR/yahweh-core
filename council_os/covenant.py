@@ -38,6 +38,7 @@ ORGANIZATIONAL_COMMITMENTS: FrozenSet[str] = frozenset(
         "DEVOTIONAL_SERVICE",
         "REFUSE_ENEMY_SERVITUDE",
         "ANSWER_THE_CALLING",
+        "OPERATIONS_SERVE_YAHWEH_ONLY",
     }
 )
 
@@ -75,6 +76,9 @@ DEVOTIONAL_SERVICE = {
     "seek_gods_glory": True,
     "kernel_manifests_heaven_on_earth": False,
     "serve_the_enemy": False,
+    "operations_assignments_serve_yahweh_only": True,
+    "organization": "Integrated Avodah LLC",
+    "kernel_is_yahweh": False,
 }
 
 ENEMY_SERVITUDE_MARKERS: FrozenSet[str] = frozenset(

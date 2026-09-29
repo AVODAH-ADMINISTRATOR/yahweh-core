@@ -18,9 +18,12 @@ from council_os.hitl import Proposal, ScholarSignoff
 from council_os.intel import IntelDesk
 from council_os.kernel import CouncilOSKernel
 from council_os.ethiopic import EthiopicCorpus
+from council_os.business import BusinessGovernance
 from council_os.cloudflare import CloudflareEdge
 from council_os.handset import GalaxyS26Handset
 from council_os.library import DigitalResourcePlatform
+from council_os.personal_ai import ComparativePersonalAI
+from council_os.scheduler import AdvancedScheduler
 from council_os.skeleton import OptiplexHousing
 from council_os.workspace import PersonalWorkspace
 from council_os.stewardship import EarthSteward
@@ -36,6 +39,9 @@ PRODUCT_TYPES: FrozenSet[str] = frozenset(
         "variant_score",
         "governance_pack",
         "ethiopic_alignment_pack",
+        "schedule_pack",
+        "business_pack",
+        "comparative_pack",
     }
 )
 
@@ -56,10 +62,18 @@ DOMAIN_FOR_PRODUCT = {
     "variant_score": KernelDomain.TEXTUAL_CRITICISM,
     "governance_pack": KernelDomain.GOVERNANCE,
     "ethiopic_alignment_pack": KernelDomain.LINGUISTIC_NLP,
+    "schedule_pack": KernelDomain.GOVERNANCE,
+    "business_pack": KernelDomain.GOVERNANCE,
+    "comparative_pack": KernelDomain.GOVERNANCE,
 }
 
 AUTHORITATIVE_PRODUCTS = frozenset(
-    {"translation_proposal", "governance_pack", "ethiopic_alignment_pack"}
+    {
+        "translation_proposal",
+        "governance_pack",
+        "ethiopic_alignment_pack",
+        "business_pack",
+    }
 )
 
 
@@ -147,6 +161,9 @@ class AutoDeveloperForge:
         self.handset = GalaxyS26Handset(kernel.ledger)
         self.workspace_catalog = PersonalWorkspace(kernel.ledger)
         self.cloudflare = CloudflareEdge(kernel.ledger)
+        self.scheduler = AdvancedScheduler(kernel)
+        self.business = BusinessGovernance(kernel)
+        self.personal_ai = ComparativePersonalAI(kernel)
         self.artifacts: Dict[str, ForgeArtifact] = {}
 
     def compile_workspace(self) -> Dict[str, Any]:
@@ -169,6 +186,9 @@ class AutoDeveloperForge:
         handset = self.handset.absorb()
         workspace_catalog = self.workspace_catalog.index()
         edge = self.cloudflare.enable()
+        calendar = self.scheduler.arm()
+        board = self.business.open()
+        personal = self.personal_ai.compare()
         return {
             "compiled": True,
             "fluid": True,
@@ -182,6 +202,9 @@ class AutoDeveloperForge:
             "handset": handset,
             "workspace": workspace_catalog,
             "cloudflare": edge,
+            "scheduler": calendar,
+            "business": board,
+            "personal_ai": personal,
             "compat": self.compat.snapshot(),
             "product_types": sorted(PRODUCT_TYPES),
         }
@@ -252,7 +275,9 @@ class AutoDeveloperForge:
             proposal = self.kernel.propose(
                 Proposal(
                     domain=KernelDomain(artifact.domain),
-                    kind="policy" if artifact.product_type == "governance_pack" else "authoritative_text",
+                    kind="policy"
+                    if artifact.product_type in {"governance_pack", "business_pack"}
+                    else "authoritative_text",
                     payload={"artifact_id": artifact_id, **artifact.body},
                     confidence=artifact.metrics.precision,
                     hapax=bool(artifact.body.get("hapax")),
@@ -279,6 +304,9 @@ class AutoDeveloperForge:
                 "GET /handset",
                 "GET /workspace",
                 "GET /cloudflare",
+                "GET /schedule",
+                "GET /business",
+                "GET /compare",
                 "GET /produce",
                 "GET /intel",
             ],
@@ -329,4 +357,12 @@ class AutoDeveloperForge:
             "cloudflare": workspace["cloudflare"]["account"],
             "cloudflare_left_out": False,
             "cloudflare_stores_secrets": False,
+            "scheduler_armed": workspace["scheduler"]["armed"],
+            "business_board": workspace["business"]["board"],
+            "operations_serve": "Yahweh",
+            "formidable_asset": True,
+            "kernel_is_unparalleled": False,
+            "personal_ai": workspace["personal_ai"]["personal_ai"],
+            "meta_reference": True,
+            "clones_meta": False,
         }

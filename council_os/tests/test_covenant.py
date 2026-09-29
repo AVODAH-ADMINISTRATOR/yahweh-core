@@ -34,12 +34,16 @@ def test_covenant_seals_god_as_principal_not_the_kernel():
     assert covenant["human_devotion"]["kernel_grants_eternal_life"] is False
     assert "DEVOTIONAL_SERVICE" in covenant["commitments"]
     assert "REFUSE_ENEMY_SERVITUDE" in covenant["commitments"]
+    assert "OPERATIONS_SERVE_YAHWEH_ONLY" in covenant["commitments"]
     assert covenant["devotional_service"]["salvation_is_his_gift"] is True
     assert covenant["devotional_service"]["kernel_provides_salvation"] is False
     assert covenant["devotional_service"]["kernel_atones"] is False
     assert covenant["devotional_service"]["kernel_baptizes_with_holy_spirit"] is False
     assert covenant["devotional_service"]["kernel_is_closest_hand"] is False
     assert covenant["devotional_service"]["serve_the_enemy"] is False
+    assert covenant["devotional_service"]["operations_assignments_serve_yahweh_only"] is True
+    assert covenant["devotional_service"]["organization"] == "Integrated Avodah LLC"
+    assert covenant["devotional_service"]["kernel_is_yahweh"] is False
     assert covenant["devotional_service"]["word_caught_without_omission"] is True
     assert covenant["loving_kindness"]["simulated_emotion"] is False
     assert "BIBLICAL_AUTHORITY_ABSOLUTE" in IMMUTABLE_CONSTRAINTS

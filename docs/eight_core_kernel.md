@@ -45,6 +45,9 @@ python -m council_os housing
 python -m council_os handset
 python -m council_os workspace
 python -m council_os cloudflare
+python -m council_os schedule
+python -m council_os business
+python -m council_os compare
 python -m council_os produce
 ```
 

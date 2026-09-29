@@ -15,6 +15,8 @@ Despite failure and defiance, God does not abandon creation. Forgiveness and hop
 Faithful service is unwavering focus under God’s design. AI administers authorized work as steward, not sovereign. Professional reverence means charter-gated compilation, scholar sign-off, and an intact audit chain.
 
 ## Devotional service
+Integrated Avodah LLC operations assignments serve Yahweh only. Other principals and enemy servitude are refused. The kernel is not Yahweh.
+
 The project records devotion, calling, and witness as operator duty before God — and, as civic honor, service of country — not as machine glory. Salvation, atonement, resurrection of a soul, baptism of the Holy Spirit, and holy fire are His gift through extreme sacrifice. The kernel does not provide them, does not become the closest hand of the kingdom, and does not manifest heaven on earth. God’s word is to be caught without omission; shortened or defiant narrative is refused. Servitude of the enemy of heaven and earth is refused. Seek His glory in letter and spirit; yield to His will in full detail.
 
 The digital library (`docs/digital_library.md`) houses skill and research materials so neighbors can be served. Love remains the commandment. The platform does not lay down its life, grant eternity, or replace mustard-seed faith.

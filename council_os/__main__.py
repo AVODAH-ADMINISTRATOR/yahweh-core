@@ -1,4 +1,4 @@
-"""CLI: python -m council_os [status|compile|health|policy|forge|covenant|library|ethiopic|housing|handset|workspace|cloudflare|produce]."""
+"""CLI: python -m council_os [status|compile|health|policy|forge|covenant|library|ethiopic|housing|handset|workspace|cloudflare|schedule|business|compare|produce]."""
 
 from __future__ import annotations
 
@@ -61,6 +61,21 @@ def main(argv: list[str] | None = None) -> int:
         forge = AutoDeveloperForge(kernel)
         forge.compile_workspace()
         print(json.dumps(forge.cloudflare.snapshot(), indent=2))
+        return 0
+    if command == "schedule":
+        forge = AutoDeveloperForge(kernel)
+        forge.compile_workspace()
+        print(json.dumps(forge.scheduler.snapshot(), indent=2))
+        return 0
+    if command == "business":
+        forge = AutoDeveloperForge(kernel)
+        forge.compile_workspace()
+        print(json.dumps(forge.business.snapshot(), indent=2))
+        return 0
+    if command == "compare":
+        forge = AutoDeveloperForge(kernel)
+        forge.compile_workspace()
+        print(json.dumps(forge.personal_ai.snapshot(), indent=2))
         return 0
     if command == "produce":
         forge = AutoDeveloperForge(kernel)

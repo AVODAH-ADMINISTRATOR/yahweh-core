@@ -123,7 +123,7 @@ def test_api_catalog_and_product_coverage():
     assert catalog["personalized_will"] is False
     assert "GET /forge" in catalog["endpoints"]
     for product in PRODUCT_TYPES:
-        if product in {"translation_proposal", "governance_pack"}:
+        if product in {"translation_proposal", "governance_pack", "business_pack"}:
             continue
         artifact = forge.generate(product, "op-1", f"make {product}", _complete_body())
         assert artifact.metrics.precision == 1.0

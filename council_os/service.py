@@ -80,6 +80,15 @@ class DomainHealthHandler(BaseHTTPRequestHandler):
         if self.path == "/cloudflare":
             self._write_json(200, _FORGE.cloudflare.snapshot())
             return
+        if self.path == "/schedule":
+            self._write_json(200, _FORGE.scheduler.snapshot())
+            return
+        if self.path == "/business":
+            self._write_json(200, _FORGE.business.snapshot())
+            return
+        if self.path == "/compare":
+            self._write_json(200, _FORGE.personal_ai.snapshot())
+            return
         if self.path == "/produce":
             self._write_json(200, _FORGE.produce())
             return
