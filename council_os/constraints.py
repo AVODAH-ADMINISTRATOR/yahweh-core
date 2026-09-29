@@ -28,6 +28,7 @@ IMMUTABLE_CONSTRAINTS: FrozenSet[str] = frozenset(
         "ZERO_TRUST_ISOLATION",
         "KILL_SWITCH_REQUIRED",
         "HOST_HARDWARE_DECOUPLED",
+        "BIBLICAL_AUTHORITY_ABSOLUTE",
     }
 )
 

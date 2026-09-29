@@ -138,6 +138,7 @@ class AutoDeveloperForge:
             self.kernel.compile()
         for adapter in ("android_pc_dell", "windows10_shell", "ide_workspace", "api_surface"):
             self.compat.enable(adapter)
+        self.steward.covenant.seal()
         return {
             "compiled": True,
             "fluid": True,
@@ -159,6 +160,9 @@ class AutoDeveloperForge:
             raise CharterViolation("kernel must compile charter policy before forge work")
         if product_type not in PRODUCT_TYPES:
             raise CharterViolation(f"unknown factory product {product_type}")
+        self.steward.covenant.refuse_deception(purpose)
+        self.steward.covenant.refuse_deception(str(body.get("title", "")))
+        self.steward.covenant.refuse_deception(str(body.get("summary", "")))
         domain = DOMAIN_FOR_PRODUCT[product_type]
         spec = spec_for(domain)
         if spec.gpu_allowed is False and body.get("gpu"):
@@ -230,6 +234,7 @@ class AutoDeveloperForge:
                 "GET /forge/products",
                 "GET /compat",
                 "GET /stewardship",
+                "GET /covenant",
                 "GET /intel",
             ],
             "integration": "council_os.service",

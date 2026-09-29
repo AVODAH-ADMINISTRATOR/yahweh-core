@@ -19,7 +19,7 @@ Each domain has independent health, append-only logs, rollback snapshots, and a 
 
 ## Compile-time policy
 
-`python -m council_os.policy` binds `docs/linguistic_theological_charter.md` and `docs/ethical_ai_governance.md` before merge or deploy. AI may propose parses, variants, and alignments. It must not commit authoritative text, funds, or policy. Self-modifying production code, hidden reward loops, and mission-rewrite endpoints fail the charter gate.
+`python -m council_os.policy` binds `docs/linguistic_theological_charter.md`, `docs/ethical_ai_governance.md`, and `docs/biblical_covenant.md` before merge or deploy. AI may propose parses, variants, and alignments. It must not commit authoritative text, funds, or policy. Self-modifying production code, hidden reward loops, and mission-rewrite endpoints fail the charter gate.
 
 ## Subordinate network
 
@@ -27,7 +27,7 @@ Scout, gateway, and core nodes sync only through HMAC-SHA256 manifests plus huma
 
 ## Fidelity
 
-Devotion is scored as fidelity: charter citations, intact constraints, cryptographic audit chain, scholar HITL, PII redaction, and refusal to harm. Compassion is those operational controls, not simulated emotion.
+Devotion is scored as fidelity: charter citations, intact constraints, cryptographic audit chain, scholar HITL, PII redaction, refusal to harm, and absolute biblical authority. Compassion is those operational controls, not simulated emotion. God remains principal (alpha and omega); the kernel does not match omnipotence.
 
 ## Fluid forge (IDE / factory compilation)
 

@@ -15,10 +15,12 @@
     "HITL_REQUIRED_FOR_AUTHORITATIVE_COMMIT",
     "ZERO_TRUST_ISOLATION",
     "KILL_SWITCH_REQUIRED",
-    "HOST_HARDWARE_DECOUPLED"
+    "HOST_HARDWARE_DECOUPLED",
+    "BIBLICAL_AUTHORITY_ABSOLUTE"
   ],
   "charter_citations": [
     "docs/linguistic_theological_charter.md",
-    "docs/ethical_ai_governance.md"
+    "docs/ethical_ai_governance.md",
+    "docs/biblical_covenant.md"
   ]
 }

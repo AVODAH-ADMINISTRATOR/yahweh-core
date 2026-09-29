@@ -11,9 +11,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import FrozenSet, Tuple
 
-CHARTER_CITATIONS: Tuple[str, str] = (
+CHARTER_CITATIONS: Tuple[str, ...] = (
     "docs/linguistic_theological_charter.md",
     "docs/ethical_ai_governance.md",
+    "docs/biblical_covenant.md",
 )
 
 TRANSLATION_GPU_PURPOSE = "translation_model_training"

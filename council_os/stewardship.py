@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, FrozenSet, List, Tuple
 
 from council_os.constraints import CharterViolation
+from council_os.covenant import BiblicalCovenant
 from council_os.domains import CHARTER_CITATIONS, KernelDomain
 from council_os.ledger import LifecycleLedger
 
@@ -58,14 +59,20 @@ class EarthSteward:
             citations=CHARTER_CITATIONS,
         )
         self._decrees: List[str] = []
+        self.covenant = BiblicalCovenant(ledger)
 
     def assignment(self) -> Dict[str, Any]:
-        return self.record.to_dict()
+        payload = self.record.to_dict()
+        payload["covenant"] = self.covenant.snapshot()
+        payload["biblical_authority"] = "absolute"
+        payload["reverence"] = "professional"
+        return payload
 
     def record_decree(self, decree: str) -> Dict[str, Any]:
         text = decree.strip()
         if not text:
             raise CharterViolation("empty decree")
+        self.covenant.refuse_deception(text)
         if "waive" in text.lower() or "personalized will" in text.lower():
             raise CharterViolation("NO_CHARTER_WAIVER")
         self._decrees.append(text)

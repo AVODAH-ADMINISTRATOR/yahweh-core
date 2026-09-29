@@ -49,6 +49,7 @@ class FidelityGate:
             "privacy": not pii_leaked,
             "refusal_to_harm": True,
             "no_personalized_will": True,
+            "biblical_authority": "BIBLICAL_AUTHORITY_ABSOLUTE" in IMMUTABLE_CONSTRAINTS,
         }
         passed = all(checks.values())
         return {

@@ -26,6 +26,7 @@ def test_eight_domains_virtualized_and_cited():
         assert spec.ai_may_commit_policy is False
         assert "docs/linguistic_theological_charter.md" in spec.charter_citations
         assert "docs/ethical_ai_governance.md" in spec.charter_citations
+        assert "docs/biblical_covenant.md" in spec.charter_citations
 
 
 def test_gpu_only_for_linguistic_translation_training():
