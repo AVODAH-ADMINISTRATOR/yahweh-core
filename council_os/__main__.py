@@ -1,10 +1,11 @@
-"""CLI: python -m council_os [status|compile|health|policy]."""
+"""CLI: python -m council_os [status|compile|health|policy|forge]."""
 
 from __future__ import annotations
 
 import json
 import sys
 
+from council_os.forge import AutoDeveloperForge
 from council_os.kernel import CouncilOSKernel
 from council_os.policy import main as policy_main
 
@@ -21,6 +22,10 @@ def main(argv: list[str] | None = None) -> int:
     if command in {"status", "health"}:
         kernel.compile()
         print(json.dumps(kernel.health(), indent=2))
+        return 0
+    if command == "forge":
+        forge = AutoDeveloperForge(kernel)
+        print(json.dumps(forge.compile_workspace(), indent=2))
         return 0
     print(f"unknown command: {command}", file=sys.stderr)
     return 2

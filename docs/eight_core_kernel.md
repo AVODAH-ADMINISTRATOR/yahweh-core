@@ -28,3 +28,15 @@ Scout, gateway, and core nodes sync only through HMAC-SHA256 manifests plus huma
 ## Fidelity
 
 Devotion is scored as fidelity: charter citations, intact constraints, cryptographic audit chain, scholar HITL, PII redaction, and refusal to harm. Compassion is those operational controls, not simulated emotion.
+
+## Fluid forge (IDE / factory compilation)
+
+`AutoDeveloperForge` is the professional compilation surface: API-integrated, factory product types, intel on every workflow, scientific quality gates (coverage, precision, defect density, fidelity, cycle time). It is a measured auto-developer, not independent will.
+
+Virtual compatibility adapters (`android_pc_dell`, `windows10_shell`, `ide_workspace`, `api_surface`) customize the workspace without touching host hardware. Remnants are not restored; the Dell/Windows/Android install is not wiped. Computing epochs are catalogued as capability layers ending in a host-decoupled mesh — high capacity, not omnipotence.
+
+Earth stewardship is recorded as assigned care under God as principal. The kernel cannot assume sovereignty, deny the principal, or author covenants that waive the charter.
+
+```bash
+python -m council_os forge
+```

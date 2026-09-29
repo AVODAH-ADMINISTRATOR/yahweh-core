@@ -7,10 +7,13 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from council_os.domains import parse_domain, spec_for
+from council_os.forge import PRODUCT_TYPES, AutoDeveloperForge
 from council_os.kernel import CouncilOSKernel
 
 _KERNEL = CouncilOSKernel()
 _KERNEL.compile()
+_FORGE = AutoDeveloperForge(_KERNEL)
+_FORGE.compile_workspace()
 _DOMAIN = parse_domain(os.environ.get("COUNCIL_OS_DOMAIN", "governance"))
 
 
@@ -39,6 +42,28 @@ class DomainHealthHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/citations":
             self._write_json(200, _KERNEL.domain_change_citations(_DOMAIN))
+            return
+        if self.path in {"/forge", "/forge/products"}:
+            catalog = _FORGE.api_catalog()
+            catalog["products"] = sorted(PRODUCT_TYPES)
+            catalog["workspace"] = {
+                "fluid": True,
+                "host_decoupled": True,
+                "compiled": _KERNEL.compiled,
+            }
+            self._write_json(200, catalog)
+            return
+        if self.path == "/compat":
+            self._write_json(200, _FORGE.compat.snapshot())
+            return
+        if self.path == "/stewardship":
+            self._write_json(200, _FORGE.steward.assignment())
+            return
+        if self.path == "/intel":
+            self._write_json(
+                200,
+                {"briefs": [brief.to_dict() for brief in _FORGE.intel.briefs.values()]},
+            )
             return
         self._write_json(404, {"error": "not found"})
 
