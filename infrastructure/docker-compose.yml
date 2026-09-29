@@ -43,3 +43,83 @@ services:
       - "7687:7687"
     volumes:
       - ./db/neo4j/data:/data
+
+  council-os-identity:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=identity
+      - COUNCIL_OS_PORT=8101
+    ports:
+      - "8101:8101"
+
+  council-os-ledger:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=ledger
+      - COUNCIL_OS_PORT=8102
+    ports:
+      - "8102:8102"
+
+  council-os-linguistic-nlp:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=linguistic_nlp
+      - COUNCIL_OS_PORT=8103
+    ports:
+      - "8103:8103"
+
+  council-os-textual-criticism:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=textual_criticism
+      - COUNCIL_OS_PORT=8104
+    ports:
+      - "8104:8104"
+
+  council-os-scout-edge:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=scout_edge
+      - COUNCIL_OS_PORT=8105
+    ports:
+      - "8105:8105"
+
+  council-os-governance:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=governance
+      - COUNCIL_OS_PORT=8106
+    ports:
+      - "8106:8106"
+
+  council-os-treasury:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=treasury
+      - COUNCIL_OS_PORT=8107
+    ports:
+      - "8107:8107"
+
+  council-os-sentinel:
+    build:
+      context: ../council_os
+      dockerfile: Dockerfile
+    environment:
+      - COUNCIL_OS_DOMAIN=sentinel
+      - COUNCIL_OS_PORT=8108
+    ports:
+      - "8108:8108"

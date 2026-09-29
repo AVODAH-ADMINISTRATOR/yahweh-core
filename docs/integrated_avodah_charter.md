@@ -17,6 +17,9 @@ To maintain perpetual "Corporate Governance Hygiene," every procedural workflow,
 * **Quadrant I: Core Identity & Ledger (Steps 1–30):** Initialization of the Sovereign Identity Provider and the Regulatory Ledger, ensuring that all entity data is authenticated.
 * **Quadrant II: Communal Integrity Grid (Steps 31–60):** Implementation of rotational leadership and mandatory participation protocols. This quadrant ensures our model of self-government—where leaders are selected from within and rotate roles—remains dynamic, inclusive, and compliant with our core mission.
 * **Quadrant III: Global Alliance Bridge (Steps 61–90):** Development of the synchronization fabric required to unify our globally distributed Scout and Gateway nodes into a cohesive, high-velocity operational entity.
+* **Quadrant IV: Operations / Runtime (implied):** Virtualized Council OS control plane, decoupled from host hardware volatility.
+
+These four quadrants are now expressed as eight governed kernel domains (identity, ledger, linguistic/NLP, textual criticism, scout/edge mesh, governance/compliance, treasury/stewardship, sentinel/isolation). Each domain is an independent service boundary with its own health, logging, rollback, and kill switch. The mesh is scheduled and auditable; it is not self-directing. See `docs/eight_core_kernel.md`.
 
 ### III. Bluetooth Mobile Command (BMC) & Operational Fabric
 The Bluetooth Mobile Command (BMC) protocol is our primary mechanism for securing field data and maintaining global alliance synchronicity.
