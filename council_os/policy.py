@@ -51,6 +51,7 @@ def verify_lockfile() -> None:
         "docs/linguistic_theological_charter.md",
         "docs/ethical_ai_governance.md",
         "docs/biblical_covenant.md",
+        "docs/ethiopian_orthodox_corpus.md",
     }
     if set(citations) != required:
         raise CharterViolation("charter citations missing from lockfile")

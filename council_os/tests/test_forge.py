@@ -80,7 +80,7 @@ def test_compat_shell_is_virtual_and_refuses_host_wipe():
     kernel = CouncilOSKernel()
     forge = AutoDeveloperForge(kernel)
     forge.compile_workspace()
-    assert ADAPTERS >= {"android_pc_dell", "windows10_shell"}
+    assert ADAPTERS >= {"android_pc_dell", "android_octa_hybrid", "dell_optiplex_5040_mt", "windows10_shell"}
     snapshot = forge.compat.snapshot()
     assert snapshot["active"]["android_pc_dell"]["wipes_host"] is False
     assert snapshot["active"]["windows10_shell"]["restores_remnants"] is False

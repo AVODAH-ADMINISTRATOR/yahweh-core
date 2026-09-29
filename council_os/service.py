@@ -65,6 +65,12 @@ class DomainHealthHandler(BaseHTTPRequestHandler):
         if self.path == "/library":
             self._write_json(200, _FORGE.library.snapshot())
             return
+        if self.path == "/ethiopic":
+            self._write_json(200, _FORGE.ethiopic.snapshot())
+            return
+        if self.path == "/housing":
+            self._write_json(200, _FORGE.housing.snapshot())
+            return
         if self.path == "/intel":
             self._write_json(
                 200,

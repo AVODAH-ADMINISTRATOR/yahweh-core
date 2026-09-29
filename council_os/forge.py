@@ -17,7 +17,9 @@ from council_os.domains import CHARTER_CITATIONS, KernelDomain, spec_for
 from council_os.hitl import Proposal, ScholarSignoff
 from council_os.intel import IntelDesk
 from council_os.kernel import CouncilOSKernel
+from council_os.ethiopic import EthiopicCorpus
 from council_os.library import DigitalResourcePlatform
+from council_os.skeleton import OptiplexHousing
 from council_os.stewardship import EarthSteward
 
 PRODUCT_TYPES: FrozenSet[str] = frozenset(
@@ -30,6 +32,7 @@ PRODUCT_TYPES: FrozenSet[str] = frozenset(
         "translation_proposal",
         "variant_score",
         "governance_pack",
+        "ethiopic_alignment_pack",
     }
 )
 
@@ -49,9 +52,12 @@ DOMAIN_FOR_PRODUCT = {
     "translation_proposal": KernelDomain.LINGUISTIC_NLP,
     "variant_score": KernelDomain.TEXTUAL_CRITICISM,
     "governance_pack": KernelDomain.GOVERNANCE,
+    "ethiopic_alignment_pack": KernelDomain.LINGUISTIC_NLP,
 }
 
-AUTHORITATIVE_PRODUCTS = frozenset({"translation_proposal", "governance_pack"})
+AUTHORITATIVE_PRODUCTS = frozenset(
+    {"translation_proposal", "governance_pack", "ethiopic_alignment_pack"}
+)
 
 
 @dataclass
@@ -133,21 +139,35 @@ class AutoDeveloperForge:
         self.compat = CompatibilityShell(kernel.ledger)
         self.steward = EarthSteward(kernel.ledger)
         self.library = DigitalResourcePlatform(kernel, covenant=self.steward.covenant)
+        self.ethiopic = EthiopicCorpus(kernel)
+        self.housing = OptiplexHousing(kernel.ledger)
         self.artifacts: Dict[str, ForgeArtifact] = {}
 
     def compile_workspace(self) -> Dict[str, Any]:
         if not self.kernel.compiled:
             self.kernel.compile()
-        for adapter in ("android_pc_dell", "windows10_shell", "ide_workspace", "api_surface"):
+        for adapter in (
+            "android_pc_dell",
+            "android_octa_hybrid",
+            "dell_optiplex_5040_mt",
+            "windows10_shell",
+            "ide_workspace",
+            "api_surface",
+        ):
             self.compat.enable(adapter)
         self.steward.covenant.seal()
         library = self.library.open()
+        self.ethiopic.assert_complete()
+        housing = self.housing.seat()
         return {
             "compiled": True,
             "fluid": True,
             "host_decoupled": True,
             "steward": self.steward.assignment(),
             "library": library,
+            "ethiopic": self.ethiopic.snapshot(),
+            "precision_map": self.ethiopic.precision_map(),
+            "housing": housing,
             "compat": self.compat.snapshot(),
             "product_types": sorted(PRODUCT_TYPES),
         }
@@ -240,6 +260,8 @@ class AutoDeveloperForge:
                 "GET /stewardship",
                 "GET /covenant",
                 "GET /library",
+                "GET /ethiopic",
+                "GET /housing",
                 "GET /intel",
             ],
             "integration": "council_os.service",

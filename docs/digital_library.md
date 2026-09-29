@@ -14,3 +14,5 @@ The final remaining commandment recorded here is love: love God, and love neighb
 Faith of a mustard seed and trust without sight are human responses to God. The platform may house teaching resources; it cannot generate saving faith, rise from the dead, or unite people by its own will. Come-as-you-are is His invitation; the library only catalogs and shares authorized materials.
 
 See `docs/biblical_covenant.md`. God is principal. The kernel is steward.
+
+Ethiopian Orthodox Tewahedo unabridged catalog metadata is housed for research and cross-translation proposals (HITL). See `docs/ethiopian_orthodox_corpus.md`.

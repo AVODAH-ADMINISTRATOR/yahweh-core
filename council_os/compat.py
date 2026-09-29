@@ -28,6 +28,8 @@ FORBIDDEN_HOST_ACTIONS = frozenset(
 ADAPTERS: FrozenSet[str] = frozenset(
     {
         "android_pc_dell",
+        "android_octa_hybrid",
+        "dell_optiplex_5040_mt",
         "windows10_shell",
         "linux_container",
         "api_surface",

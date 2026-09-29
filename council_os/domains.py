@@ -15,6 +15,7 @@ CHARTER_CITATIONS: Tuple[str, ...] = (
     "docs/linguistic_theological_charter.md",
     "docs/ethical_ai_governance.md",
     "docs/biblical_covenant.md",
+    "docs/ethiopian_orthodox_corpus.md",
 )
 
 TRANSLATION_GPU_PURPOSE = "translation_model_training"
