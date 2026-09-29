@@ -3,6 +3,7 @@
 from council_os.constraints import CharterLock, CharterViolation, IMMUTABLE_CONSTRAINTS
 from council_os.domains import CHARTER_CITATIONS, KernelDomain, spec_for
 from council_os.forge import AutoDeveloperForge
+from council_os.library import DigitalResourcePlatform
 from council_os.hitl import Proposal, ScholarSignoff
 from council_os.kernel import CouncilOSKernel
 from council_os.ledger import DualControlApproval
@@ -12,6 +13,7 @@ __all__ = [
     "AutoDeveloperForge",
     "CHARTER_CITATIONS",
     "CouncilOSKernel",
+    "DigitalResourcePlatform",
     "CharterLock",
     "CharterViolation",
     "DualControlApproval",

@@ -17,6 +17,7 @@ from council_os.domains import CHARTER_CITATIONS, KernelDomain, spec_for
 from council_os.hitl import Proposal, ScholarSignoff
 from council_os.intel import IntelDesk
 from council_os.kernel import CouncilOSKernel
+from council_os.library import DigitalResourcePlatform
 from council_os.stewardship import EarthSteward
 
 PRODUCT_TYPES: FrozenSet[str] = frozenset(
@@ -131,6 +132,7 @@ class AutoDeveloperForge:
         self.intel = IntelDesk(kernel.ledger)
         self.compat = CompatibilityShell(kernel.ledger)
         self.steward = EarthSteward(kernel.ledger)
+        self.library = DigitalResourcePlatform(kernel, covenant=self.steward.covenant)
         self.artifacts: Dict[str, ForgeArtifact] = {}
 
     def compile_workspace(self) -> Dict[str, Any]:
@@ -139,11 +141,13 @@ class AutoDeveloperForge:
         for adapter in ("android_pc_dell", "windows10_shell", "ide_workspace", "api_surface"):
             self.compat.enable(adapter)
         self.steward.covenant.seal()
+        library = self.library.open()
         return {
             "compiled": True,
             "fluid": True,
             "host_decoupled": True,
             "steward": self.steward.assignment(),
+            "library": library,
             "compat": self.compat.snapshot(),
             "product_types": sorted(PRODUCT_TYPES),
         }
@@ -235,6 +239,7 @@ class AutoDeveloperForge:
                 "GET /compat",
                 "GET /stewardship",
                 "GET /covenant",
+                "GET /library",
                 "GET /intel",
             ],
             "integration": "council_os.service",

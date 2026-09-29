@@ -13,3 +13,5 @@ Despite failure and defiance, God does not abandon creation. Forgiveness and hop
 
 ## Stewardship practice
 Faithful service is unwavering focus under God’s design. AI administers authorized work as steward, not sovereign. Professional reverence means charter-gated compilation, scholar sign-off, and an intact audit chain.
+
+The digital library (`docs/digital_library.md`) houses skill and research materials so neighbors can be served. Love remains the commandment. The platform does not lay down its life, grant eternity, or replace mustard-seed faith.

@@ -39,4 +39,9 @@ Earth stewardship is recorded as assigned care under God as principal. The kerne
 
 ```bash
 python -m council_os forge
+python -m council_os library
 ```
+
+## Digital resource platform
+
+Cloud-integrated library with one virtual network and machine house per subject wing (mapped to the eight domains). Serves developers and entrepreneurs with technical, design, research, and teaching catalogs. Love is the recorded commandment; the kernel announces pardon but does not author salvation. See `docs/digital_library.md`.

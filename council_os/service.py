@@ -62,6 +62,9 @@ class DomainHealthHandler(BaseHTTPRequestHandler):
         if self.path == "/covenant":
             self._write_json(200, _FORGE.steward.covenant.snapshot())
             return
+        if self.path == "/library":
+            self._write_json(200, _FORGE.library.snapshot())
+            return
         if self.path == "/intel":
             self._write_json(
                 200,

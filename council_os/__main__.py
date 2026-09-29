@@ -1,4 +1,4 @@
-"""CLI: python -m council_os [status|compile|health|policy|forge|covenant]."""
+"""CLI: python -m council_os [status|compile|health|policy|forge|covenant|library]."""
 
 from __future__ import annotations
 
@@ -31,6 +31,11 @@ def main(argv: list[str] | None = None) -> int:
         forge = AutoDeveloperForge(kernel)
         forge.compile_workspace()
         print(json.dumps(forge.steward.covenant.snapshot(), indent=2))
+        return 0
+    if command == "library":
+        forge = AutoDeveloperForge(kernel)
+        forge.compile_workspace()
+        print(json.dumps(forge.library.snapshot(), indent=2))
         return 0
     print(f"unknown command: {command}", file=sys.stderr)
     return 2
