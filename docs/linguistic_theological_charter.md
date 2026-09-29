@@ -5,7 +5,6 @@
 This engine adopts a "Transparent Equivalence" model.
 - **Primary Goal:** To provide a translation that preserves the original linguistic structure (formal equivalence) while utilizing the semantic knowledge graph to clarify ancient cultural metaphors and idioms (dynamic/functional equivalence).
 - **Theological Baseline:** The engine shall maintain neutrality regarding denominational dogma while strictly adhering to the established, historically recognized critical texts (e.g., Nestle-Aland for Greek, BHS for Hebrew).
-- **Ethiopic corpus:** The unabridged Ethiopian Orthodox Tewahedo tradition (Ge'ez, with Amharic/English research alignments) is catalogued for preservation and scholarly cross-translation. The engine does not abridge that canon, author scripture, or replace the Church.
 
 ## 2. Linguistic Standards
 - **Hebrew/Aramaic:** Preservation of the masoretic consonantal text is mandatory. Vowel points and cantillation marks are to be treated as secondary layers, modifiable by user preference.

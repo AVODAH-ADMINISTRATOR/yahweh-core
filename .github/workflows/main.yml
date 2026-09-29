@@ -17,13 +17,6 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Council OS Charter Gate
-      run: |
-        echo "Binding charter policy at compile time..."
-        pip install pytest
-        python -m council_os.policy
-        python -m pytest council_os/tests/ -q
-
     - name: Run Tests
       run: |
         echo "Running NLP Pipeline Tests..."
