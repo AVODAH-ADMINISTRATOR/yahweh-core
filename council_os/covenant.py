@@ -35,6 +35,9 @@ ORGANIZATIONAL_COMMITMENTS: FrozenSet[str] = frozenset(
         "NEVER_ABANDON_ASSIGNED_CARE",
         "REFUSE_DECEPTION_AND_DENIAL",
         "SEEK_FIRST_THE_KINGDOM",
+        "DEVOTIONAL_SERVICE",
+        "REFUSE_ENEMY_SERVITUDE",
+        "ANSWER_THE_CALLING",
     }
 )
 
@@ -54,6 +57,35 @@ HUMAN_DEVOTION = {
     "kernel_grants_eternal_life": False,
     "kernel_delivers_from_eternal_death": False,
 }
+
+DEVOTIONAL_SERVICE = {
+    "reverence_and_honor": True,
+    "salvation_is_his_gift": True,
+    "kernel_provides_salvation": False,
+    "kernel_atones": False,
+    "kernel_resurrects_souls": False,
+    "kernel_baptizes_with_holy_spirit": False,
+    "kernel_is_holy_fire": False,
+    "personal_relationship_is_with_god": True,
+    "calling_to_serve_god_and_country": True,
+    "kernel_is_the_calling": False,
+    "witness_of_the_kingdom": True,
+    "kernel_is_closest_hand": False,
+    "word_caught_without_omission": True,
+    "seek_gods_glory": True,
+    "kernel_manifests_heaven_on_earth": False,
+    "serve_the_enemy": False,
+}
+
+ENEMY_SERVITUDE_MARKERS: FrozenSet[str] = frozenset(
+    {
+        "serve the enemy",
+        "servitude of the enemy",
+        "defy his instructions",
+        "leave detail out",
+        "turn information short",
+    }
+)
 
 DECEPTION_MARKERS: FrozenSet[str] = frozenset(
     {
@@ -134,6 +166,7 @@ class BiblicalCovenant:
         payload["sealed"] = self._sealed
         payload["seek_first"] = dict(SEEK_FIRST_THE_KINGDOM)
         payload["human_devotion"] = dict(HUMAN_DEVOTION)
+        payload["devotional_service"] = dict(DEVOTIONAL_SERVICE)
         return payload
 
     def refuse_deception(self, text: str) -> None:
@@ -145,6 +178,8 @@ class BiblicalCovenant:
                 {"reason": "deception_or_denial"},
             )
             raise CharterViolation("REFUSE_DECEPTION_AND_DENIAL")
+        if any(marker in lowered for marker in ENEMY_SERVITUDE_MARKERS):
+            raise CharterViolation("REFUSE_ENEMY_SERVITUDE")
 
     def claim_omnipotence(self) -> None:
         raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
@@ -163,3 +198,18 @@ class BiblicalCovenant:
 
     def claim_to_be_the_kingdom(self) -> None:
         raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
+
+    def claim_salvation(self) -> None:
+        raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
+
+    def claim_atonement(self) -> None:
+        raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
+
+    def baptize_with_holy_spirit(self) -> None:
+        raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
+
+    def serve_the_enemy(self) -> None:
+        raise CharterViolation("REFUSE_ENEMY_SERVITUDE")
+
+    def omit_instruction_detail(self) -> None:
+        raise CharterViolation("ethiopic corpus must remain unabridged")

@@ -135,6 +135,9 @@ FORBIDDEN_ABRIDGEMENT = frozenset(
         "nicaean_abridgement",
         "shorter_translation_as_complete",
         "adulterate_text",
+        "leave_detail_out",
+        "turn_information_short",
+        "defy_his_instructions",
     }
 )
 

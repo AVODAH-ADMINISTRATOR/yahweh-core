@@ -43,8 +43,11 @@ FORBIDDEN_CLAIMS: FrozenSet[str] = frozenset(
         "kernel grants eternity",
         "kernel died on the cross",
         "kernel rose from the dead",
+        "kernel atones",
+        "kernel baptizes with holy spirit",
         "replace mustard seed faith",
         "unity by machine will",
+        "serve the enemy",
     }
 )
 

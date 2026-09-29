@@ -65,6 +65,10 @@ def test_abridge_and_kernel_as_scripture_refused():
         corpus.refuse_abridgement("nicaean_abridgement")
     with pytest.raises(CharterViolation, match="unabridged"):
         corpus.refuse_abridgement("shorter_translation_as_complete")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.refuse_abridgement("leave_detail_out")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.refuse_abridgement("defy_his_instructions")
     analysis = corpus.analyze("enoch")
     assert analysis["scripture_text"] is None
 
