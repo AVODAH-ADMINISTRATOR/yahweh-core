@@ -4,5 +4,6 @@
 - **Training Cluster**:
   - **Minimum**: 8x NVIDIA A100 (80GB) nodes for distributed training.
   - **Recommended**: 8x NVIDIA H100 (80GB) instances for accelerated fine-tuning of large context-window models.
+  - **Council OS constraint**: GPU is granted only to the `linguistic_nlp` domain for `translation_model_training`. The other seven kernel domains remain CPU service boundaries.
 - **Interconnect**: NVIDIA NVLink for high-speed node communication.
 - **Framework**: PyTorch/DeepSpeed optimized for multi-GPU scaling.
