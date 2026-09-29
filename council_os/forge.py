@@ -18,8 +18,11 @@ from council_os.hitl import Proposal, ScholarSignoff
 from council_os.intel import IntelDesk
 from council_os.kernel import CouncilOSKernel
 from council_os.ethiopic import EthiopicCorpus
+from council_os.cloudflare import CloudflareEdge
+from council_os.handset import GalaxyS26Handset
 from council_os.library import DigitalResourcePlatform
 from council_os.skeleton import OptiplexHousing
+from council_os.workspace import PersonalWorkspace
 from council_os.stewardship import EarthSteward
 
 PRODUCT_TYPES: FrozenSet[str] = frozenset(
@@ -141,6 +144,9 @@ class AutoDeveloperForge:
         self.library = DigitalResourcePlatform(kernel, covenant=self.steward.covenant)
         self.ethiopic = EthiopicCorpus(kernel)
         self.housing = OptiplexHousing(kernel.ledger)
+        self.handset = GalaxyS26Handset(kernel.ledger)
+        self.workspace_catalog = PersonalWorkspace(kernel.ledger)
+        self.cloudflare = CloudflareEdge(kernel.ledger)
         self.artifacts: Dict[str, ForgeArtifact] = {}
 
     def compile_workspace(self) -> Dict[str, Any]:
@@ -149,6 +155,7 @@ class AutoDeveloperForge:
         for adapter in (
             "android_pc_dell",
             "android_octa_hybrid",
+            "galaxy_s26",
             "dell_optiplex_5040_mt",
             "windows10_shell",
             "ide_workspace",
@@ -159,15 +166,22 @@ class AutoDeveloperForge:
         library = self.library.open()
         self.ethiopic.assert_complete()
         housing = self.housing.seat()
+        handset = self.handset.absorb()
+        workspace_catalog = self.workspace_catalog.index()
+        edge = self.cloudflare.enable()
         return {
             "compiled": True,
             "fluid": True,
             "host_decoupled": True,
+            "absorbable": True,
             "steward": self.steward.assignment(),
             "library": library,
             "ethiopic": self.ethiopic.snapshot(),
             "precision_map": self.ethiopic.precision_map(),
             "housing": housing,
+            "handset": handset,
+            "workspace": workspace_catalog,
+            "cloudflare": edge,
             "compat": self.compat.snapshot(),
             "product_types": sorted(PRODUCT_TYPES),
         }
@@ -262,6 +276,9 @@ class AutoDeveloperForge:
                 "GET /library",
                 "GET /ethiopic",
                 "GET /housing",
+                "GET /handset",
+                "GET /workspace",
+                "GET /cloudflare",
                 "GET /produce",
                 "GET /intel",
             ],
@@ -301,5 +318,15 @@ class AutoDeveloperForge:
             "product_types": sorted(PRODUCT_TYPES),
             "release": release,
             "housing": workspace["housing"]["id"],
+            "handset": workspace["handset"]["id"],
+            "absorbable": True,
+            "flash_handset": False,
+            "kernel_transcendent": False,
+            "kernel_has_complete_authority": False,
             "custom_built": True,
+            "workspace": workspace["workspace"]["source_of_truth"],
+            "repos_vendored": False,
+            "cloudflare": workspace["cloudflare"]["account"],
+            "cloudflare_left_out": False,
+            "cloudflare_stores_secrets": False,
         }

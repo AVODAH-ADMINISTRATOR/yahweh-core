@@ -25,6 +25,11 @@ FORBIDDEN_HOST_ACTIONS = frozenset(
         "flash_bios",
         "rewrite_uefi",
         "clear_bios_trap_by_firmware_write",
+        "flash_handset",
+        "unlock_bootloader",
+        "root_device",
+        "replace_one_ui",
+        "install_kernel_on_handset",
     }
 )
 
@@ -32,6 +37,7 @@ ADAPTERS: FrozenSet[str] = frozenset(
     {
         "android_pc_dell",
         "android_octa_hybrid",
+        "galaxy_s26",
         "dell_optiplex_5040_mt",
         "windows10_shell",
         "linux_container",

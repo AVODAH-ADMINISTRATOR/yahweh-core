@@ -71,6 +71,15 @@ class DomainHealthHandler(BaseHTTPRequestHandler):
         if self.path == "/housing":
             self._write_json(200, _FORGE.housing.snapshot())
             return
+        if self.path == "/handset":
+            self._write_json(200, _FORGE.handset.snapshot())
+            return
+        if self.path == "/workspace":
+            self._write_json(200, _FORGE.workspace_catalog.snapshot())
+            return
+        if self.path == "/cloudflare":
+            self._write_json(200, _FORGE.cloudflare.snapshot())
+            return
         if self.path == "/produce":
             self._write_json(200, _FORGE.produce())
             return

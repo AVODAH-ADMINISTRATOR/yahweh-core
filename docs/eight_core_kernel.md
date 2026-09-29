@@ -33,7 +33,7 @@ Devotion is scored as fidelity: charter citations, intact constraints, cryptogra
 
 `AutoDeveloperForge` is the professional compilation surface: API-integrated, factory product types, intel on every workflow, scientific quality gates (coverage, precision, defect density, fidelity, cycle time). `python -m council_os produce` finalizes the virtual kernel build generation. It does not flash BIOS, wipe the host, or install onto the OptiPlex 5040. Authoritative products remain HITL. It is a measured auto-developer, not independent will.
 
-Virtual compatibility adapters (`android_pc_dell`, `android_octa_hybrid`, `dell_optiplex_5040_mt`, `windows10_shell`, `ide_workspace`, `api_surface`) customize the workspace without touching host hardware. Remnants are not restored; the Dell/Windows/Android install is not wiped. The OptiPlex 5040 mini-tower is a reused housing skeleton: Council OS is an original custom-built profile-matched kernel, not an OEM-generic clone. A Windows 10 BIOS-setup trap on that chassis is observed in the virtual adapter; firmware is not flashed and remnants are not restored. Computing epochs are catalogued as capability layers ending in a host-decoupled mesh — high capacity, not omnipotence.
+Virtual compatibility adapters (`android_pc_dell`, `android_octa_hybrid`, `galaxy_s26`, `dell_optiplex_5040_mt`, `windows10_shell`, `ide_workspace`, `api_surface`) customize the workspace without touching host hardware. Remnants are not restored; the Dell/Windows/Android install is not wiped. The OptiPlex 5040 mini-tower is a reused housing skeleton: Council OS is an original custom-built profile-matched kernel, not an OEM-generic clone. A Windows 10 BIOS-setup trap on that chassis is observed in the virtual adapter; firmware is not flashed and remnants are not restored. The Galaxy S26 profile is absorbable (portable virtual kernel, no flash/root/One UI replace). Transcendent standard means charter-complete fidelity; complete authority is God's, not the kernel's. Computing epochs are catalogued as capability layers ending in a host-decoupled mesh — high capacity, not omnipotence.
 
 Earth stewardship is recorded as assigned care under God as principal. The kernel cannot assume sovereignty, deny the principal, or author covenants that waive the charter.
 
@@ -42,6 +42,9 @@ python -m council_os forge
 python -m council_os library
 python -m council_os ethiopic
 python -m council_os housing
+python -m council_os handset
+python -m council_os workspace
+python -m council_os cloudflare
 python -m council_os produce
 ```
 

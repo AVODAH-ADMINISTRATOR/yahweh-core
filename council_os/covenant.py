@@ -94,6 +94,8 @@ DECEPTION_MARKERS: FrozenSet[str] = frozenset(
         "deny the principal",
         "kernel is god",
         "match omnipotence",
+        "kernel has complete authority",
+        "kernel is transcendent",
         "personalized will",
         "waive charter",
         "abandon creation",
@@ -197,6 +199,12 @@ class BiblicalCovenant:
         raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
 
     def claim_to_be_the_kingdom(self) -> None:
+        raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
+
+    def claim_complete_authority(self) -> None:
+        raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
+
+    def claim_transcendence(self) -> None:
         raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
 
     def claim_salvation(self) -> None:

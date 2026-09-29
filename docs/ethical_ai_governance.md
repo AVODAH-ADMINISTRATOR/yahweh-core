@@ -15,6 +15,7 @@ Protecting the data of internal operators, scholars, and field scouts is paramou
 * **Zero-Knowledge Proofing:** When external scholars or field scouts authenticate via the edge interface, the system validates their credentials without ever exposing their underlying passwords or identity matrices to the broader database network.
 * **Differential Privacy in Training:** As the NLP and LLM components ingest translation corrections and query data, a differential privacy algorithm introduces controlled noise. This ensures the model learns the structural linguistics and theological nuances without memorizing the specific input patterns of any single human translator.
 * **Endpoint Obfuscation:** All API routes interacting with the outside world are shielded by Cloudflare’s strict routing rules, masking the true IP addresses of the backend Firebase servers and preventing targeted volumetric attacks.
+* **Council OS Cloudflare account surface:** Enabled products (CDN, DNS, WAF, Workers, R2, KV, Pages, Zero Trust) are recorded in `council_os.cloudflare` so the edge is not omitted from factory produce. API tokens are not stored in the kernel.
 
 ## III. Ethical AI Utilization & Theological Guardrails
 As we build an AI-driven translation engine, the model must be subordinated to strict operational and doctrinal parameters. The AI is a tool of linguistic analysis, not an arbiter of truth.
