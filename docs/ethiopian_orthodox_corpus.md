@@ -3,7 +3,7 @@
 Council OS preserves and disseminates *catalog metadata* for the Ethiopian Orthodox Tewahedo biblical tradition so researchers can work toward relationship with God. The kernel does not author scripture, replace the Church, or claim to be the text.
 
 ## Integrity
-The unabridged corpus is treated as complete: **81 books**, no silent abridgement, no warped detail, no dropping of traditional books, no AI commit of authoritative Ge'ez/Amharic/English text without scholar HITL. A 66-book count is not this catalog. Divine intent is recorded as facilitating a relationship with God; compute does not become that relationship or the Word.
+The unabridged corpus is treated as complete: **81 books**. Do not add. Do not subtract. No silent abridgement, no warped detail, no Nicaea-style shorter copy treated as complete, no dropping of traditional books, no AI commit of authoritative Ge'ez/Amharic/English text without scholar HITL. A 66-book count is not this catalog. Catalog housing records “basic instructions before leaving Earth” as a mnemonic, not as kernel-authored scripture. Divine intent is recorded as facilitating a relationship with God; compute does not become that relationship, the Word, or eternal life.
 
 ## Scientific method
 Research, analysis, and cross-translation run as measured proposals (confidence tags, variant honesty, morphological fallback). Micro-factory generation may emit alignment packs; scripture commits remain HITL.

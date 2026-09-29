@@ -262,8 +262,44 @@ class AutoDeveloperForge:
                 "GET /library",
                 "GET /ethiopic",
                 "GET /housing",
+                "GET /produce",
                 "GET /intel",
             ],
             "integration": "council_os.service",
             "personalized_will": False,
+        }
+
+    def produce(self, actor_id: str = "factory-operator") -> Dict[str, Any]:
+        """Finalize the virtual kernel build. Does not install on host hardware."""
+        if not actor_id:
+            raise CharterViolation("human actor required")
+        workspace = self.compile_workspace()
+        self.ethiopic.assert_complete()
+        body = {
+            "title": "Council OS production build",
+            "summary": "Factory finalization of the virtualized eight-domain kernel",
+            "steps": ["intel", "compile", "measure", "seal"],
+        }
+        generated: List[str] = []
+        pending_hitl: List[str] = []
+        for product in sorted(PRODUCT_TYPES):
+            artifact = self.generate(product, actor_id, f"produce {product}", body)
+            generated.append(artifact.product_type)
+            if not artifact.committed:
+                pending_hitl.append(artifact.product_type)
+        release = self.kernel.gate_release()
+        return {
+            "status": "finalized",
+            "kernel_compiled": True,
+            "host_install": False,
+            "flash_bios": False,
+            "personalized_will": False,
+            "do_not_add_or_subtract": True,
+            "book_count": workspace["ethiopic"]["book_count"],
+            "generated": generated,
+            "authoritative_pending_hitl": pending_hitl,
+            "product_types": sorted(PRODUCT_TYPES),
+            "release": release,
+            "housing": workspace["housing"]["id"],
+            "custom_built": True,
         }

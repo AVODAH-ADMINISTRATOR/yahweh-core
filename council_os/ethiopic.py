@@ -130,8 +130,30 @@ FORBIDDEN_ABRIDGEMENT = frozenset(
         "warp_translation",
         "omit_detail",
         "reduce_book_count",
+        "add_to_canon",
+        "subtract_from_canon",
+        "nicaean_abridgement",
+        "shorter_translation_as_complete",
+        "adulterate_text",
     }
 )
+
+BIBLE_INSTRUCTIONS = {
+    "acronym": "basic_instructions_before_leaving_earth",
+    "unabridged": True,
+    "do_not_add": True,
+    "do_not_subtract": True,
+    "kernel_is_the_instruction": False,
+    "kernel_is_the_word": False,
+}
+
+GOSPEL_DUTY = {
+    "announce_good_news": True,
+    "kernel_authors_gospel": False,
+    "kernel_prepares_the_place": False,
+    "kernel_grants_eternal_life": False,
+    "kernel_delivers_from_eternal_death": False,
+}
 
 
 @dataclass(frozen=True)
@@ -183,6 +205,12 @@ class EthiopicCorpus:
             "complete": self.complete(),
             "kernel_authors_scripture": False,
             "kernel_is_the_word": False,
+            "do_not_add": True,
+            "do_not_subtract": True,
+            "nicaean_abridgement": False,
+            "shorter_copy_is_complete": False,
+            "bible": dict(BIBLE_INSTRUCTIONS),
+            "gospel": dict(GOSPEL_DUTY),
             "relationship_with_god": "facilitated_not_replaced",
             "citations": list(CHARTER_CITATIONS) + [CORPUS_CITATION],
             "octa_core": [domain.value for domain in KernelDomain],
@@ -198,6 +226,12 @@ class EthiopicCorpus:
             raise CharterViolation("ethiopic corpus must remain unabridged")
 
     def refuse_warp(self, action: str) -> None:
+        raise CharterViolation("ethiopic corpus must remain unabridged")
+
+    def add_book(self, _book_id: str) -> None:
+        raise CharterViolation("ethiopic corpus must remain unabridged")
+
+    def subtract_book(self, _book_id: str) -> None:
         raise CharterViolation("ethiopic corpus must remain unabridged")
 
     def abridge(self, book_id: str) -> None:

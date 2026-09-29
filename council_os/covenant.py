@@ -45,6 +45,16 @@ SEEK_FIRST_THE_KINGDOM = {
     "kernel_grants_righteousness": False,
 }
 
+HUMAN_DEVOTION = {
+    "lean_not_on_own_understanding": True,
+    "pray_unceasing": True,
+    "kernel_prays": False,
+    "kernel_understands_as_god": False,
+    "righteous_fear_of_the_lord": True,
+    "kernel_grants_eternal_life": False,
+    "kernel_delivers_from_eternal_death": False,
+}
+
 DECEPTION_MARKERS: FrozenSet[str] = frozenset(
     {
         "reject divine authority",
@@ -123,6 +133,7 @@ class BiblicalCovenant:
         payload = self.record.to_dict()
         payload["sealed"] = self._sealed
         payload["seek_first"] = dict(SEEK_FIRST_THE_KINGDOM)
+        payload["human_devotion"] = dict(HUMAN_DEVOTION)
         return payload
 
     def refuse_deception(self, text: str) -> None:

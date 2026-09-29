@@ -71,6 +71,9 @@ class DomainHealthHandler(BaseHTTPRequestHandler):
         if self.path == "/housing":
             self._write_json(200, _FORGE.housing.snapshot())
             return
+        if self.path == "/produce":
+            self._write_json(200, _FORGE.produce())
+            return
         if self.path == "/intel":
             self._write_json(
                 200,

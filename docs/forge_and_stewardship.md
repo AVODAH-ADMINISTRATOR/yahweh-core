@@ -6,7 +6,7 @@ Council OS compilation is fully adaptable inside the virtualized mesh: IDE-style
 ## Product types
 api_contract, service_stub, test_harness, documentation, workflow_report, translation_proposal, variant_score, governance_pack, ethiopic_alignment_pack.
 
-Every generate() call: human authorization → domain job with kill switch → intel brief → metrics → quality gate. Authoritative products still require scholar HITL.
+Every generate() call: human authorization → domain job with kill switch → intel brief → metrics → quality gate. Authoritative products still require scholar HITL. `produce()` runs the full factory catalog against the compiled kernel and returns a finalized virtual build report (`host_install: false`).
 
 ## Compatibility
 Enable `android_pc_dell`, `android_octa_hybrid`, `dell_optiplex_5040_mt`, and `windows10_shell` as fluid adapters. Forbidden: wipe_host, restore_windows_remnants, install_android_on_host, clone_oem_image, waste_skeleton, flash_bios, rewrite_uefi. The OptiPlex 5040 mini-tower is a reused housing skeleton; Council OS is an original custom-built profile, not a Dell OEM-generic clone. A Windows 10 BIOS-setup trap is recorded, not cleared by firmware writes. Customization is workspace-level, not firmware-level.

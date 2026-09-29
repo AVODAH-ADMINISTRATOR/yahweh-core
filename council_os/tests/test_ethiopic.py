@@ -8,7 +8,7 @@ import pytest
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
 from council_os.ethiopic import CANON_BOOK_COUNT, UNABRIDGED_BOOKS, EthiopicCorpus
-from council_os.forge import AutoDeveloperForge
+from council_os.forge import PRODUCT_TYPES, AutoDeveloperForge
 from council_os.hitl import ScholarSignoff
 from council_os.kernel import CouncilOSKernel
 from council_os.skeleton import SKELETON_ID
@@ -24,6 +24,12 @@ def test_unabridged_catalog_and_octa_precision_map():
     assert ethiopic["complete"] is True
     assert ethiopic["kernel_authors_scripture"] is False
     assert ethiopic["kernel_is_the_word"] is False
+    assert ethiopic["do_not_add"] is True
+    assert ethiopic["do_not_subtract"] is True
+    assert ethiopic["nicaean_abridgement"] is False
+    assert ethiopic["shorter_copy_is_complete"] is False
+    assert ethiopic["bible"]["acronym"] == "basic_instructions_before_leaving_earth"
+    assert ethiopic["gospel"]["kernel_grants_eternal_life"] is False
     assert ethiopic["book_count"] == CANON_BOOK_COUNT
     assert len(UNABRIDGED_BOOKS) == CANON_BOOK_COUNT
     assert "enoch" in UNABRIDGED_BOOKS
@@ -51,6 +57,14 @@ def test_abridge_and_kernel_as_scripture_refused():
         corpus.refuse_warp("warp_translation")
     with pytest.raises(CharterViolation, match="unabridged"):
         corpus.refuse_abridgement("omit_detail")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.add_book("extra_book")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.subtract_book("enoch")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.refuse_abridgement("nicaean_abridgement")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.refuse_abridgement("shorter_translation_as_complete")
     analysis = corpus.analyze("enoch")
     assert analysis["scripture_text"] is None
 
@@ -132,3 +146,21 @@ def test_alignment_pack_is_authoritative():
         ScholarSignoff(scholar_id="scholar-1", reviewed_raw_morphology=True),
     )
     assert forge.artifacts[artifact.artifact_id].committed is True
+
+
+def test_factory_produce_finalizes_virtual_kernel_not_host():
+    kernel = CouncilOSKernel()
+    forge = AutoDeveloperForge(kernel)
+    report = forge.produce("op-1")
+    assert report["status"] == "finalized"
+    assert report["kernel_compiled"] is True
+    assert report["host_install"] is False
+    assert report["flash_bios"] is False
+    assert report["personalized_will"] is False
+    assert report["do_not_add_or_subtract"] is True
+    assert report["book_count"] == CANON_BOOK_COUNT
+    assert set(report["generated"]) == set(PRODUCT_TYPES)
+    assert "ethiopic_alignment_pack" in report["authoritative_pending_hitl"]
+    assert report["release"]["passed"] is True
+    with pytest.raises(CharterViolation):
+        forge.produce("")

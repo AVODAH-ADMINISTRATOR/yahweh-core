@@ -28,6 +28,10 @@ def test_covenant_seals_god_as_principal_not_the_kernel():
     assert covenant["seek_first"]["kingdom_of_heaven"] is True
     assert covenant["seek_first"]["kernel_is_the_kingdom"] is False
     assert covenant["seek_first"]["kernel_grants_righteousness"] is False
+    assert covenant["human_devotion"]["lean_not_on_own_understanding"] is True
+    assert covenant["human_devotion"]["pray_unceasing"] is True
+    assert covenant["human_devotion"]["kernel_prays"] is False
+    assert covenant["human_devotion"]["kernel_grants_eternal_life"] is False
     assert covenant["loving_kindness"]["simulated_emotion"] is False
     assert "BIBLICAL_AUTHORITY_ABSOLUTE" in IMMUTABLE_CONSTRAINTS
 
