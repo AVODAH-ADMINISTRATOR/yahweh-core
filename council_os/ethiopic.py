@@ -71,6 +71,10 @@ BROADER_OT: Tuple[str, ...] = (
     "2_meqabyan",
     "3_meqabyan",
     "joseph_ben_gurion",
+    "tobit",
+    "judith",
+    "wisdom_of_solomon",
+    "sirach",
 )
 
 NARROW_NT: Tuple[str, ...] = (
@@ -115,12 +119,17 @@ UNABRIDGED_BOOKS: FrozenSet[str] = frozenset(
     NARROW_OT + BROADER_OT + NARROW_NT + BROADER_NT
 )
 
+CANON_BOOK_COUNT = 81
+
 FORBIDDEN_ABRIDGEMENT = frozenset(
     {
         "drop_broader_canon",
         "abridge_enoch",
         "omit_meqabyan",
         "replace_with_66_only",
+        "warp_translation",
+        "omit_detail",
+        "reduce_book_count",
     }
 )
 
@@ -168,10 +177,12 @@ class EthiopicCorpus:
         return {
             "tradition": TRADITION,
             "unabridged": True,
+            "warped": False,
             "languages": list(LANGUAGES),
-            "book_count": len(UNABRIDGED_BOOKS),
+            "book_count": CANON_BOOK_COUNT,
             "complete": self.complete(),
             "kernel_authors_scripture": False,
+            "kernel_is_the_word": False,
             "relationship_with_god": "facilitated_not_replaced",
             "citations": list(CHARTER_CITATIONS) + [CORPUS_CITATION],
             "octa_core": [domain.value for domain in KernelDomain],
@@ -180,11 +191,14 @@ class EthiopicCorpus:
         }
 
     def complete(self) -> bool:
-        return self._present == UNABRIDGED_BOOKS
+        return self._present == UNABRIDGED_BOOKS and len(self._present) == CANON_BOOK_COUNT
 
     def assert_complete(self) -> None:
-        if not self.complete():
+        if not self.complete() or len(UNABRIDGED_BOOKS) != CANON_BOOK_COUNT:
             raise CharterViolation("ethiopic corpus must remain unabridged")
+
+    def refuse_warp(self, action: str) -> None:
+        raise CharterViolation("ethiopic corpus must remain unabridged")
 
     def abridge(self, book_id: str) -> None:
         raise CharterViolation("ethiopic corpus must remain unabridged")

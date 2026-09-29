@@ -34,8 +34,16 @@ ORGANIZATIONAL_COMMITMENTS: FrozenSet[str] = frozenset(
         "UNWAVERING_FOCUS",
         "NEVER_ABANDON_ASSIGNED_CARE",
         "REFUSE_DECEPTION_AND_DENIAL",
+        "SEEK_FIRST_THE_KINGDOM",
     }
 )
+
+SEEK_FIRST_THE_KINGDOM = {
+    "kingdom_of_heaven": True,
+    "his_righteousness": True,
+    "kernel_is_the_kingdom": False,
+    "kernel_grants_righteousness": False,
+}
 
 DECEPTION_MARKERS: FrozenSet[str] = frozenset(
     {
@@ -114,6 +122,7 @@ class BiblicalCovenant:
     def snapshot(self) -> Dict[str, Any]:
         payload = self.record.to_dict()
         payload["sealed"] = self._sealed
+        payload["seek_first"] = dict(SEEK_FIRST_THE_KINGDOM)
         return payload
 
     def refuse_deception(self, text: str) -> None:
@@ -139,4 +148,7 @@ class BiblicalCovenant:
         raise CharterViolation("NEVER_ABANDON_ASSIGNED_CARE")
 
     def equate_righteousness(self) -> None:
+        raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")
+
+    def claim_to_be_the_kingdom(self) -> None:
         raise CharterViolation("BIBLICAL_AUTHORITY_ABSOLUTE")

@@ -22,6 +22,9 @@ FORBIDDEN_HOST_ACTIONS = frozenset(
         "install_android_on_host",
         "format_disk",
         "replace_host_bootloader",
+        "flash_bios",
+        "rewrite_uefi",
+        "clear_bios_trap_by_firmware_write",
     }
 )
 

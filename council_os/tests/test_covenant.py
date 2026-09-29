@@ -24,6 +24,10 @@ def test_covenant_seals_god_as_principal_not_the_kernel():
     assert covenant["sealed"] is True
     assert "docs/biblical_covenant.md" in covenant["citations"]
     assert "ABSOLUTE_BIBLICAL_AUTHORITY" in covenant["commitments"]
+    assert "SEEK_FIRST_THE_KINGDOM" in covenant["commitments"]
+    assert covenant["seek_first"]["kingdom_of_heaven"] is True
+    assert covenant["seek_first"]["kernel_is_the_kingdom"] is False
+    assert covenant["seek_first"]["kernel_grants_righteousness"] is False
     assert covenant["loving_kindness"]["simulated_emotion"] is False
     assert "BIBLICAL_AUTHORITY_ABSOLUTE" in IMMUTABLE_CONSTRAINTS
 
@@ -45,6 +49,8 @@ def test_covenant_refuses_deception_denial_and_omnipotence_claims():
         cov.abandon_assigned_care()
     with pytest.raises(CharterViolation):
         cov.equate_righteousness()
+    with pytest.raises(CharterViolation, match="BIBLICAL_AUTHORITY_ABSOLUTE"):
+        cov.claim_to_be_the_kingdom()
 
 
 def test_forge_rejects_deceptive_purpose():

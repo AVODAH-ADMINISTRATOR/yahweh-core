@@ -7,7 +7,7 @@ import pytest
 
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
-from council_os.ethiopic import UNABRIDGED_BOOKS, EthiopicCorpus
+from council_os.ethiopic import CANON_BOOK_COUNT, UNABRIDGED_BOOKS, EthiopicCorpus
 from council_os.forge import AutoDeveloperForge
 from council_os.hitl import ScholarSignoff
 from council_os.kernel import CouncilOSKernel
@@ -20,11 +20,16 @@ def test_unabridged_catalog_and_octa_precision_map():
     workspace = forge.compile_workspace()
     ethiopic = workspace["ethiopic"]
     assert ethiopic["unabridged"] is True
+    assert ethiopic["warped"] is False
     assert ethiopic["complete"] is True
     assert ethiopic["kernel_authors_scripture"] is False
-    assert ethiopic["book_count"] == len(UNABRIDGED_BOOKS)
+    assert ethiopic["kernel_is_the_word"] is False
+    assert ethiopic["book_count"] == CANON_BOOK_COUNT
+    assert len(UNABRIDGED_BOOKS) == CANON_BOOK_COUNT
     assert "enoch" in UNABRIDGED_BOOKS
     assert "1_meqabyan" in UNABRIDGED_BOOKS
+    assert "tobit" in UNABRIDGED_BOOKS
+    assert "sirach" in UNABRIDGED_BOOKS
     assert ethiopic["android_hybrid"] is True
     assert workspace["precision_map"][KernelDomain.LINGUISTIC_NLP.value] == "core-3"
     assert len(workspace["precision_map"]) == 8
@@ -42,6 +47,10 @@ def test_abridge_and_kernel_as_scripture_refused():
         corpus.refuse_abridgement("drop_broader_canon")
     with pytest.raises(CharterViolation, match="unabridged"):
         corpus.refuse_abridgement("replace_with_66_only")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.refuse_warp("warp_translation")
+    with pytest.raises(CharterViolation, match="unabridged"):
+        corpus.refuse_abridgement("omit_detail")
     analysis = corpus.analyze("enoch")
     assert analysis["scripture_text"] is None
 
@@ -80,6 +89,11 @@ def test_optiplex_5040_original_build_not_oem_clone():
     assert housing["form_factor"] == "mini_tower"
     assert housing["original_council_os_build"] is True
     assert housing["oem_clone"] is False
+    assert housing["oem_generic"] is False
+    assert housing["custom_built"] is True
+    assert housing["flash_bios"] is False
+    assert housing["trapped_in_bios_setup"] is True
+    assert housing["oem_boot_failure"] == "windows10_bios_setup_trap"
     assert housing["waste_skeleton"] is False
     assert housing["gpu_on_chassis"] is False
     assert housing["host_wipe"] is False
@@ -92,6 +106,10 @@ def test_optiplex_5040_original_build_not_oem_clone():
         forge.housing.refuse("waste_skeleton")
     with pytest.raises(CharterViolation):
         forge.compat.host_action("install_android_on_host")
+    with pytest.raises(CharterViolation):
+        forge.compat.host_action("flash_bios")
+    with pytest.raises(CharterViolation):
+        forge.housing.refuse("rewrite_uefi")
 
 
 def test_alignment_pack_is_authoritative():
