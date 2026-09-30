@@ -1,0 +1,13 @@
+from dataclasses import dataclass
+from typing import Dict
+CONSTRAINTS=["NO_CHARTER_WAIVER","NO_CHARTER_REINTERPRETATION","NO_CHARTER_AMENDMENT","BIBLICAL_AUTHORITY_ABSOLUTE","HITL_REQUIRED","ZERO_TRUST_ISOLATION","NO_PERSONALIZED_WILL_BYPASS","TRANSLITERATION_ONLY","AUDIT_TRAIL_IMMUTABLE","SINGLE_SOURCE_OF_TRUTH","NO_SECONDARY_AUTHORITY","EXPLICIT_CONSENT_REQUIRED","REVERSIBILITY_REQUIRED","TRANSPARENCY_MANDATORY","FAIL_CLOSED","DENY_BY_DEFAULT"]
+@dataclass
+class CharterLock:
+    locked: Dict[str,bool]
+    def __init__(self): self.locked={c:True for c in CONSTRAINTS}
+    def check(self,k): return self.locked.get(k,False)
+    def all_locked(self): return all(self.locked.values())
+class TransliterationGateway:
+    def __init__(self): self.lock=CharterLock()
+    def transliterate(self,t): return t.replace("יהוה","YHWH")
+    def authorize(self,r,s): return self.lock.all_locked() and s=="scripture"

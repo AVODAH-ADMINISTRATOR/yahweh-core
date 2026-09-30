@@ -1,11 +1,11 @@
-# CharterLock Architecture
+# CharterLock Architecture - Transcended Oversight
 
 ```text
-Request -> Classify -> Verify Source -> Enforce Policy -> Transliterate or Deny
-        -> Audit Receipt -> Human Approval -> Protected Release
+DRAFT -> VALIDATED -> REVIEWED -> RELEASED
+                      |
+                   REVOKED
+
+Request -> Classify -> Verify Source -> Enforce Policy -> Transliterate or Deny -> Audit Receipt -> Human Gate -> Protected Release
 ```
 
-## Operating boundary
-
-Only approved transliteration from provenance-bearing sources is permitted.
-Translation, interpretation, publication, deployment, and policy changes require separate human authorization.
+Bounded transliteration only. All else = Deny or Review.

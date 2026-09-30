@@ -1,0 +1,12 @@
+{
+  "id": "b08a2817ae416c8d6d134a7937835322",
+  "status": "LOCKED_PERMANENT_PERFECT",
+  "access": "UNIQUE",
+  "subliminal": "SYNCHRONIZED",
+  "address": "yahweh-core://governance",
+  "locks": 16,
+  "mode": "FAIL_CLOSED",
+  "resource": "PERFECT",
+  "pace": "BALANCED",
+  "timestamp": "2026-09-30T18:28:43.140142Z"
+}

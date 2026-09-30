@@ -18,6 +18,15 @@ denied_operations:
   - modify_policy
 approved_source_classes:
   - scripture
+controls:
+  no_charter_waiver: true
+  no_automated_reinterpretation: true
+  zero_trust_isolation: true
+  deny_by_default: true
+  fail_closed: true
+  transliteration_only: true
+  immutable_audit_trail: true
+  hitl_required: true
 release_gate:
   required:
     - policy_schema_valid
