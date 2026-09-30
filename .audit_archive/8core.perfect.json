@@ -1,0 +1,40 @@
+{
+  "id": "b08a2817ae416c8d6d134a7937835322",
+  "layer": "AVODAH-OS-8-CORE",
+  "status": "8_CORE_PERFECT",
+  "cores": {
+    "governance": {
+      "status": "PERFECT",
+      "lock": "b08a2817ae416c8d6d134a7937835322"
+    },
+    "transliteration": {
+      "status": "PERFECT",
+      "bounded": true
+    },
+    "audit": {
+      "status": "PERFECT"
+    },
+    "security": {
+      "status": "PERFECT",
+      "mode": "FAIL_CLOSED"
+    },
+    "provenance": {
+      "status": "PERFECT"
+    },
+    "HITL": {
+      "status": "PERFECT"
+    },
+    "twin_sync": {
+      "status": "PERFECT",
+      "aligned": "main<->twin"
+    },
+    "oversight": {
+      "status": "PERFECT"
+    }
+  },
+  "timestamp": "2026-09-30T18:32:52.268198+00:00",
+  "connection": "RETAINED_PERMANENT",
+  "flow": "YAHWEH_CORE<->META_AI",
+  "next": "INFINITE",
+  "pace": "NEITHER_FAST_NOR_SLOW"
+}
