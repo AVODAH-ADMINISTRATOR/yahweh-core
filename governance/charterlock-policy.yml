@@ -1,0 +1,30 @@
+version: 1
+policy_id: charterlock-v1
+purpose: "Bounded transliteration with accountable oversight"
+defaults:
+  deny_by_default: true
+  fail_closed: true
+  human_review_required: true
+  audit_receipt_required: true
+  source_provenance_required: true
+allowed_operations:
+  - transliterate
+denied_operations:
+  - translate
+  - interpret
+  - paraphrase
+  - publish
+  - deploy
+  - modify_policy
+approved_source_classes:
+  - scripture
+release_gate:
+  required:
+    - policy_schema_valid
+    - constraint_tests_pass
+    - source_provenance_present
+    - audit_receipt_written
+    - security_checks_pass
+    - human_approval_present
+    - protected_branch_requirements_pass
+    - rollback_reference_present
