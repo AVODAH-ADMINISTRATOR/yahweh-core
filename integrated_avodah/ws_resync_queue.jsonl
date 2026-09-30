@@ -1,0 +1,3 @@
+{"message": {"payload": {"foo": "bar"}, "seq": 1, "type": "resync"}, "timestamp": "2026-08-07T11:02:57.913986"}
+{"message": {"payload": {"foo": "bar"}, "seq": 2, "type": "resync"}, "timestamp": "2026-08-07T11:02:57.914842"}
+{"message": {"payload": {"foo": "bar"}, "seq": 3, "type": "resync"}, "timestamp": "2026-08-07T11:02:57.915396"}

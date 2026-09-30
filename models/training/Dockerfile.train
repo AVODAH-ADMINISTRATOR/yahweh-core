@@ -1,0 +1,41 @@
+# Dockerfile.train - Phase 4: Distributed Training Container
+# Target: NVIDIA A100/H100 (80GB) multi-GPU cluster
+# Step 93: Setup distributed training environment (DeepSpeed/Megatron-LM)
+
+FROM nvcr.io/nvidia/pytorch:24.05-py3
+
+LABEL maintainer="Integrated Avodah LLC <dev@integrated-avodah-llc.org>"
+LABEL description="Biblical Language Translation Engine - Phase 4 Training Cluster"
+
+# Environment Configuration
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    CUDA_HOME=/usr/local/cuda \
+    NCCL_DEBUG=INFO \
+    TORCH_DISTRIBUTED_DEBUG=INFO
+
+WORKDIR /workspace/yahweh-training
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    wget \
+    curl \
+    ninja-build \
+    libopenmpi-dev \
+    openmpi-bin \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies (including FlashAttention-2)
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy training source
+COPY . .
+
+# DeepSpeed multi-GPU entrypoint
+# Usage: docker run --gpus all ... deepspeed --num_gpus=8 train.py --config deepspeed_config.json
+ENTRYPOINT ["deepspeed"]
+CMD ["--help"]

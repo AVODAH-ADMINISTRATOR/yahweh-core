@@ -1,0 +1,18 @@
+# GILDED OBSIDIAN SEAL
+.bash_history
+.cache/
+.config/
+.venv/
+node_modules/
+*.zip
+drive_sync.py
+requirements.txt
+ledger.txt
+credentials.json
+token.json
+.env
+*secret*.json
+*credentials*.json
+**/credentials.json
+**/token.json
+**/.env

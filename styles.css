@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #ffffff;
+  color: #111111;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px;
+}
+.site-header {
+  max-width: 960px;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 40px;
+}
+.site-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 4rem);
+}
+.tagline {
+  margin: 16px 0 0;
+  color: #555;
+}
+.site-header nav a {
+  color: #111;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.site-header nav a:hover {
+  border-color: #111;
+}
+.gallery,
+.content {
+  max-width: 960px;
+  width: 100%;
+}
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+.gallery figure {
+  margin: 0;
+  background: #f7f7f7;
+  border: 1px solid #e6e6e6;
+  padding: 16px;
+}
+.gallery img {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+}
+.gallery figcaption {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: #444;
+}
+.content section {
+  margin-bottom: 32px;
+}
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+.plan-grid article {
+  padding: 24px;
+  border: 1px solid #e6e6e6;
+  background: #fbfbfb;
+  border-radius: 18px;
+}
+.plan-grid h3 {
+  margin-top: 0;
+}
+.site-footer {
+  margin-top: 48px;
+  width: 100%;
+  max-width: 960px;
+  text-align: center;
+  color: #777;
+}

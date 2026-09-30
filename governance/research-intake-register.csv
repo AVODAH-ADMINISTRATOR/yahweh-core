@@ -1,0 +1,2 @@
+date,source,source_url_or_citation,content_hash,reviewer,review_status,confidence_score,rationale,provenance_path
+2026-09-30,perplexity,pending_url,SHA256_PENDING,pending,untrusted_research,pending,awaiting_schema_validation,audit/intel-perplexity/

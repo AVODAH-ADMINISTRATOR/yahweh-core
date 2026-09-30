@@ -1,0 +1,299 @@
+{
+    "organization": "Integrated Avodah LLC",
+    "timestamp": "2026-07-25T23:46:51.386630Z",
+    "system_info": {
+        "node": "DESKTOP-1UO4KNI",
+        "system": "Windows",
+        "release": "10",
+        "version": "10.0.19045"
+    },
+    "bluetooth_drivers": [
+        {
+            "FriendlyName": "Beats Studio Buds Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Scout Global Initiative",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "X1BQ Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Generic Attribute Profile",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Bluetooth LE Generic Attribute Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "AL HydraWave",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Beats Studio Buds",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Generic Access Profile",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Personal Area Network NAP Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Scout Global Initiative",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Light Up Earbuds Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Scout Global Initiative Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Object Push Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "BE100",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "BE100 Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "AL HydraWave Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Bluetooth LE Generic Attribute Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Headset Audio Gateway Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Scout Global Initiative Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Phonebook Access Pse Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "BE100 Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Generic Attribute Profile",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Microsoft Bluetooth LE Enumerator",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "X1BQ",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Personal Area Network Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Bluetooth LE Generic Attribute Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "X1BQ",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Bluetooth LE Generic Attribute Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Light Up Earbuds Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Bluetooth LE Generic Attribute Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Bluetooth LE Generic Attribute Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Light Up Earbuds",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Generic Access Profile",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "AL HydraWave Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Headset Audio Gateway Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Microsoft Bluetooth Enumerator",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "TP-Link Bluetooth Adapter",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "TP-LINK CORPORATION PTE. LTD."
+        },
+        {
+            "FriendlyName": "Beats Studio Buds Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "X1BQ Avrcp Transport",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Object Push Service",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        },
+        {
+            "FriendlyName": "Bluetooth Device (RFCOMM Protocol TDI)",
+            "Status": "OK",
+            "Class": "Bluetooth",
+            "DriverVersion": null,
+            "Manufacturer": "Microsoft"
+        }
+    ]
+}

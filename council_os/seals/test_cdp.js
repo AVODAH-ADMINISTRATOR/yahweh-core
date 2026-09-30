@@ -1,0 +1,1 @@
+const WebSocket = require('ws'); const ws = new WebSocket('ws://127.0.0.1:9222/devtools/page/DB1B0CB24ADE880C1D95530F11A3E2CD', { headers: { 'Origin': 'http://localhost:9222' } }); ws.on('open', () => { console.log('Connected to the compliance portal tab!'); ws.close(); }); ws.on('error', (err) => console.error(err));

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nlp-inference-deployment
+  namespace: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nlp-inference
+  template:
+    metadata:
+      labels:
+        app: nlp-inference
+    spec:
+      containers:
+      - name: nlp-inference
+        image: your-registry/nlp-engine:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DB_HOST
+          value: "core-db-service"
+        - name: NEO4J_URI
+          value: "bolt://variant-db-service:7687"

@@ -1,0 +1,15 @@
+{
+    "organization_name": "Integrated Avodah LLC",
+    "category": "Religious organization",
+    "location": "Lawrence, KS, USA",
+    "mission": "Holistic corporate compliance portal facilitating ethical stewardship and regulatory governance.",
+    "core_values": [
+        "Stewardship",
+        "Integrity",
+        "Compliance",
+        "Holistic Service"
+    ],
+    "verification_timestamp": "2026-07-23T20:39:15.952411Z",
+    "portal_status": "Active",
+    "architecture": "Single Page Application (SPA) / Vite React Stack"
+}

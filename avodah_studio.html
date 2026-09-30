@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin:0; display:flex; height:100vh; background:#0a0a0a; color:white; font-family:Segoe UI }
+  #auditorium { flex:2; background:#111 }
+  #studio { flex:1; background:#1a1a1a; padding:20px; border-left:2px solid #333 }
+  .fader { width:100%; margin:10px 0 }
+  button { background:#c9a86a; color:black; border:none; padding:10px 20px; cursor:pointer; margin:5px }
+</style>
+</head>
+<body>
+  <div id="auditorium"></div>
+  <div id="studio">
+    <h2>AVODAH AUDIO STUDIO</h2>
+    <button onclick="playTrack()">▶ Play Sermon Audio</button>
+    <button onclick="recordTrack()">● Record</button>
+    <hr>
+    <label>Main Volume</label><input type="range" class="fader" id="vol" min="-40" max="0">
+    <label>Reverb (Auditorium Feel)</label><input type="range" class="fader" id="reverb" min="0" max="100">
+    <label>Mic 1 - Pastor</label><input type="range" class="fader" min="0" max="100">
+    <label>Mic 2 - Worship</label><input type="range" class="fader" min="0" max="100">
+    <hr>
+    <h3>VISUAL AUDITORIUM</h3>
+    <button onclick="addLight()">+ Add Stage Light</button>
+    <button onclick="addScreen()">+ Add Screen for Deck</button>
+    <button onclick="toggleAudience()">Toggle Audience View</button>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import * as Tone from 'https://unpkg.com/tone@14.8.49/build/Tone.js';
+
+// --- VISUAL AUDITORIUM 3D ---
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth*0.66/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth*0.66, window.innerHeight);
+document.getElementById('auditorium').appendChild(renderer.domElement);
+
+// Stage
+const stage = new THREE.Mesh(new THREE.BoxGeometry(10,0.5,4), new THREE.MeshStandardMaterial({color:0x222222}));
+stage.position.set(0,0,-5); scene.add(stage);
+
+// Screen for your Sunday Decks
+const screenGeo = new THREE.PlaneGeometry(6,3.5);
+const screenMat = new THREE.MeshBasicMaterial({color:0x000000});
+const screen = new THREE.Mesh(screenGeo, screenMat);
+screen.position.set(0,2.5,-6.9); scene.add(screen);
+
+// Lighting
+const light = new THREE.PointLight(0xc9a86a, 10, 20);
+light.position.set(0,5,0); scene.add(light);
+scene.add(new THREE.AmbientLight(0x404040));
+
+camera.position.set(0,3,5);
+function animate(){ requestAnimationFrame(animate); renderer.render(scene, camera); }
+animate();
+
+window.addLight = () => {
+  const l = new THREE.PointLight(0xffffff, 5, 10);
+  l.position.set((Math.random()-0.5)*8, 4, -5);
+  scene.add(l);
+}
+window.addScreen = () => {
+  // Load your Avodah deck as texture
+  const loader = new THREE.TextureLoader();
+  loader.load('file:///C:/Users/YOU/Documents/MyAvodahDrive/Sunday_Decks/latest.jpg', (tex)=>{
+    screen.material.map = tex; screen.material.needsUpdate = true;
+  });
+}
+
+// --- AUDIO STUDIO ---
+const reverb = new Tone.Reverb(3).toDestination();
+const player = new Tone.Player().connect(reverb);
+
+window.playTrack = async () => {
+  await Tone.start();
+  player.autostart = true;
+}
+window.recordTrack = async () => {
+  const mic = new Tone.UserMedia();
+  await mic.open();
+  mic.connect(reverb);
+  console.log("Recording...");
+}
+</script>
+</body>
+</html>

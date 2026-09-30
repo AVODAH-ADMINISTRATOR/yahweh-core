@@ -1,0 +1,1 @@
+const WebSocket = require('ws'); const ws = new WebSocket('ws://127.0.0.1:9222/devtools/page/EFD64DAE5C41EEAA53073C043505BED3'); ws.on('open', () => { console.log('Connected to CDP!'); ws.send(JSON.stringify({id: 1, method: 'Runtime.evaluate', params: {expression: 'document.title'}})); }); ws.on('message', (msg) => { console.log('Received:', msg.toString()); ws.close(); });
