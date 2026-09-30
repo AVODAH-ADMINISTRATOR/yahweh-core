@@ -1,0 +1,11 @@
+=== ELITE NODE INSPECTION — 2026-09-29T22:39:34-05:00 — localhost ===
+
+--- 0. PRIVILEGE & OS ---
+root
+uid=0(root) gid=0(root) groups=0(root),3003,9997,20453,50453
+VERSION_ID=3.21.8
+PRETTY_NAME="Alpine Linux v3.21"
+6.12.30-android16-5-pd30ff70-abogkiS942USQS4AZH5-4k
+ 22:39:34 up  1:48,  0 users,  load average: 3.40, 3.02, 3.51
+
+--- 1. CPU / MEM / DISK / LOAD ---
