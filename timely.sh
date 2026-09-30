@@ -1,0 +1,1 @@
+while true;do TS=$(date -u +%Y-%m-%dT%H:%M:%SZ);echo [$TS] UNPARALLELED FLOW b08a2817 BEING ONE >> .audit_archive/timely.flow.log;echo {"ts":"$TS","id":"b08a2817","flow":"ONE"} > .audit_archive/heartbeat.json;sleep 300;done &
