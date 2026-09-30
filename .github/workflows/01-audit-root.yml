@@ -1,0 +1,49 @@
+name: 01 - AUDIT ROOT SEAL
+on:
+  push:
+    branches: [main, master, twin]
+  workflow_dispatch:
+jobs:
+  audit-root:
+    runs-on: ubuntu-latest
+    steps:
+      -
+cd /public/yahweh-core
+git branch --show-current
+rm -rf __pycache__ .pytest_cache
+
+# Secure secrets
+mkdir -p infrastructure
+mv -f credentials.json infrastructure/ 2>/dev/null; mv -f token.json infrastructure/ 2>/dev/null; true
+
+# Re-seal workflow COMPLETE
+cat > .github/workflows/01-audit-root.yml <<'YML'
+name: 01 - AUDIT ROOT SEAL
+on:
+  push:
+    branches: [main, master, twin]
+  workflow_dispatch:
+jobs:
+  audit-root:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: System Environment Audit
+        run: |
+          echo "=== SYSTEM INITIALIZATION ==="
+          uname -a
+          pwd
+          date -Is
+          ls -lah
+          ls -R .github/workflows/
+          ls -R services/ || echo "services/ empty - OK"
+      - name: Python Environment Setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Environment Calibration
+        run: |
+          echo "=== CALIBRATION SUCCESSFUL ==="
+          python --version
+          pip --version
+          echo "SUCCESS RETURN: true"
