@@ -1,5 +1,6 @@
-spacy==3.7.2
+spacy==3.8.16
 transformers==4.35.0
 nltk==3.8.1
 pytest==7.4.3
-torch==2.1.0
+
+qrcode[pil]>=8.2
