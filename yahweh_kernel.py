@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pathlib, time
 print("=== YAHWEH-CORE | Welcome Home ===")
-print(f"Date: {time.strftime("%Y-%m-%d %H:%M")}")
+print(f"Date: {time.strftime('%Y-%m-%d %H:%M')}")
 print("We built this with care - 8 quadrants, one purpose")
 quads = ["services/governance","services/bluetooth/nodes","services/drive","services/api","services/execution","council_os/seals"]
 for q in quads:
