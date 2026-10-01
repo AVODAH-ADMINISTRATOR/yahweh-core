@@ -117,5 +117,5 @@ class CloudflareEdge:
         }
 
     def refuse(self, action: str) -> None:
-        if action in FORBIDDEN_EDGE_ACTIONS or action:
+        if action in FORBIDDEN_EDGE_ACTIONS:
             raise CharterViolation("ZERO_TRUST_ISOLATION")

@@ -89,5 +89,5 @@ class GalaxyS26Handset:
         return profile
 
     def refuse(self, action: str) -> None:
-        if action in FORBIDDEN_HANDSET_ACTIONS or action:
+        if action in FORBIDDEN_HANDSET_ACTIONS:
             raise CharterViolation("HOST_HARDWARE_DECOUPLED")
