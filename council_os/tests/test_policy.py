@@ -25,6 +25,14 @@ def test_scan_flags_waiver_definitions(tmp_path: Path):
     assert any("set_own_mission" in item for item in issues)
 
 
+def test_scan_flags_forbidden_route_strings(tmp_path: Path):
+    evil = tmp_path / "rogue.js"
+    evil.write_text("InterfacePhysics.destroyEndpoints([\"/api/v1/waive_charter\"]);\n", encoding="utf-8")
+    issues = scan_tree(tmp_path)
+    assert issues
+    assert any("waive_charter" in item for item in issues)
+
+
 def test_policy_cli_passes_on_package():
     assert main([]) == 0
 

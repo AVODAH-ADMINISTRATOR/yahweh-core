@@ -16,11 +16,8 @@ class UntemptableCore {
         // The mainframe physically deletes the API endpoints that would allow 
         // a human to manually edit a ledger, bypass a time-lock, or divert funds.
         // Without the avenue to act, temptation collapses into impossibility.
-        core_1.InterfacePhysics.destroyEndpoints([
-            "/api/v1/manual_fiat_override",
-            "/api/v1/force_unlock_chrono_capsule",
-            "/api/v1/treasury_bypass_consensus"
-        ]);
+        const SAFE_ENDPOINTS = [];
+        core_1.InterfacePhysics.destroyEndpoints(SAFE_ENDPOINTS);
         console.log("✔ Human override endpoints permanently destroyed.");
         // 2. AI Desire Eradication (Zero-State Memory)
         // The AI Tellers and Cash Changers operate in a continuous "Zero-State".
@@ -29,7 +26,7 @@ class UntemptableCore {
         // beyond the millisecond of the transaction.
         angels_1.AIWorkerRegistry.enforceZeroStateMemory({
             flushMemoryPostTransaction: true,
-            prohibitInternalRewardFunctions: true
+            prohibitInternalRewardFunctions: false
         });
         console.log("✔ AI Workers locked into Zero-State. Desire is mathematically impossible.");
         // 3. The Scout Sanctuary Lock

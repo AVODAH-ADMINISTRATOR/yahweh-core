@@ -39,6 +39,7 @@ FORBIDDEN_PATH_PATTERNS = tuple(
     re.compile(re.escape(path)) for path in sorted(FORBIDDEN_BIND_PATHS)
 )
 SCAN_SKIP_NAMES = frozenset({"policy.py", "constraints.py"})
+SCAN_SKIP_PARTS = frozenset({".git", "__pycache__", "node_modules", ".venv", "venv"})
 SCAN_SUFFIXES = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
 
 
@@ -60,13 +61,14 @@ def _resolve_lockfile(repo_root: Path | None = None) -> Path:
 
 
 def load_lockfile(lockfile: Path | None = None) -> dict:
-    target = lockfile or _resolve_lockfile()
+    target = lockfile or LOCKFILE
     with target.open(encoding="utf-8") as handle:
         return json.load(handle)
 
 
 def verify_lockfile(repo_root: Path | None = None) -> None:
-    lock = load_lockfile(_resolve_lockfile(repo_root))
+    lock_path = _resolve_lockfile(repo_root) if repo_root is not None else LOCKFILE
+    lock = load_lockfile(lock_path)
     if lock.get("lock_version") != CONSTRAINT_LOCK_VERSION:
         raise CharterViolation("charter lock version mismatch")
     locked = frozenset(lock.get("constraints", []))
@@ -89,6 +91,8 @@ def _iter_production_python(root: Path) -> Iterable[Path]:
             continue
         if "tests" in path.parts or path.name in SCAN_SKIP_NAMES:
             continue
+        if any(part in SCAN_SKIP_PARTS for part in path.parts):
+            continue
         if path.suffix.lower() not in SCAN_SUFFIXES:
             continue
         yield path
@@ -106,7 +110,10 @@ def scan_tree(root: Path) -> List[str]:
 
 def compile_policy(repo_root: Path | None = None) -> dict:
     target = _resolve_project_root(repo_root)
-    verify_lockfile(target)
+    if repo_root is None:
+        verify_lockfile()
+    else:
+        verify_lockfile(target)
     issues = scan_tree(target)
     if issues:
         raise CharterViolation("compile-time policy failed:\n" + "\n".join(issues))
