@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
 if str(API_DIR) not in sys.path:
     sys.path.insert(0, str(API_DIR))
 
-from cloudflare_ai import CloudflareAIError, CloudflareWorkersAI, DEFAULT_MODEL  # noqa: E402
+from cloudflare_ai import CloudflareAIError, CloudflareWorkersAI, DEFAULT_MODEL, OFFICIAL_DOCS  # noqa: E402
 from cloudflare_edge import (  # noqa: E402
     EDGE_HOP_VALUE,
     forbid_direct_origin,
@@ -75,6 +75,7 @@ def test_workers_ai_posts_documented_translation_shape():
     assert ACCOUNT_ID not in dumped
     assert snap["stores_secrets"] is False
     assert snap["configured"] is True
+    assert snap["docs"] == OFFICIAL_DOCS
     assert API_TOKEN not in repr(client)
 
 
@@ -151,4 +152,19 @@ def test_worker_bounds_unauthenticated_api():
     assert "ORIGIN_URL" in source
     wrangler = (ROOT / "plane" / "cloudflare" / "wrangler.toml").read_text(encoding="utf-8")
     assert 'main = "src/index.js"' in wrangler
+    assert "[ai]" in wrangler
+    assert 'binding = "AI"' in wrangler
     assert "API_TOKEN" not in wrangler
+    assert "env.AI.run" in source
+    assert "@cf/meta/m2m100-1.2b" in source
+
+
+def test_official_workers_ai_docs_are_cited():
+    assert OFFICIAL_DOCS["source"] == "https://github.com/cloudflare/cloudflare-docs"
+    assert OFFICIAL_DOCS["rest_api"].endswith("/workers-ai/get-started/rest-api/")
+    assert OFFICIAL_DOCS["model"].endswith("/workers-ai/models/m2m100-1.2b/")
+    local_docs = (ROOT / "docs" / "cloudflare.md").read_text(encoding="utf-8")
+    assert "workers-ai/get-started/rest-api/" in local_docs
+    assert "env.AI.run()" in local_docs
+    products = (ROOT / "council_os" / "cloudflare.py").read_text(encoding="utf-8")
+    assert '"id": "workers_ai"' in products

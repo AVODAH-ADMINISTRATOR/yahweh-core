@@ -6,5 +6,8 @@ compatibility_date = "2026-09-30"
 directory = "./dist"
 binding = "ASSETS"
 
+[ai]
+binding = "AI"
+
 [vars]
 ORIGIN_URL = "http://127.0.0.1:8000"

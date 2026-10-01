@@ -39,7 +39,7 @@ class WhatsAppCommandRequest(BaseModel):
 
 class TranslateRequest(BaseModel):
     text: str = Field(..., min_length=1)
-    source_lang: str = Field(..., min_length=1)
+    source_lang: str = Field("en", min_length=1)
     target_lang: str = Field(..., min_length=1)
 
 @app.middleware("http")

@@ -1,8 +1,8 @@
 """Cloudflare Workers AI client for origin translation.
 
-Uses the documented v4 AI run URL. Account identifiers and API tokens
-are read from process environment and are never written to the catalog,
-ledger, or HTTP responses.
+Uses the documented Execute AI model REST URL. Account identifiers and
+API tokens are read from process environment and are never written to
+the catalog, ledger, or HTTP responses.
 """
 
 from __future__ import annotations
@@ -18,6 +18,15 @@ ALLOWED_MODELS = frozenset({DEFAULT_MODEL})
 API_BASE_URL = "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/"
 ACCOUNT_ID_RE = re.compile(r"^[a-f0-9]{32}$", re.IGNORECASE)
 REQUEST_TIMEOUT_SECONDS = 30
+DEFAULT_SOURCE_LANG = "en"
+
+OFFICIAL_DOCS = {
+    "rest_api": "https://developers.cloudflare.com/workers-ai/get-started/rest-api/",
+    "execute_model": "https://developers.cloudflare.com/api/resources/ai/methods/run/",
+    "model": "https://developers.cloudflare.com/workers-ai/models/m2m100-1.2b/",
+    "bindings": "https://developers.cloudflare.com/workers-ai/configuration/bindings/",
+    "source": "https://github.com/cloudflare/cloudflare-docs",
+}
 
 
 class CloudflareAIError(RuntimeError):
@@ -25,7 +34,7 @@ class CloudflareAIError(RuntimeError):
 
 
 class CloudflareWorkersAI:
-    """Thin client for Cloudflare Workers AI translation."""
+    """Thin client for the Cloudflare Workers AI REST API."""
 
     def __init__(
         self,
@@ -51,11 +60,13 @@ class CloudflareWorkersAI:
         return {
             "provider": "cloudflare_workers_ai",
             "model": DEFAULT_MODEL,
+            "task": "translation",
             "configured": self.configured,
             "stores_secrets": False,
             "live_login": False,
             "account_id_present": bool(self.account_id),
             "token_present": bool(self._token),
+            "docs": dict(OFFICIAL_DOCS),
         }
 
     def run(self, model: str, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -84,12 +95,19 @@ class CloudflareWorkersAI:
             raise CloudflareAIError("Cloudflare Workers AI request failed")
         return body
 
-    def translate(self, text: str, source_lang: str, target_lang: str) -> Dict[str, Any]:
+    def translate(
+        self,
+        text: str,
+        source_lang: str = DEFAULT_SOURCE_LANG,
+        target_lang: str = "",
+    ) -> Dict[str, Any]:
+        if not target_lang:
+            raise CloudflareAIError("target_lang is required")
         return self.run(
             DEFAULT_MODEL,
             {
                 "text": text,
-                "source_lang": source_lang,
+                "source_lang": source_lang or DEFAULT_SOURCE_LANG,
                 "target_lang": target_lang,
             },
         )

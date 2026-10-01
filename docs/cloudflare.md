@@ -5,43 +5,51 @@ pcx_content_type: how-to
 
 # Cloudflare edge
 
-Connect the origin API to Cloudflare without storing tokens in the kernel.
+Connect the origin API to Cloudflare Workers, static assets, and Workers AI. Keep API tokens out of the kernel.
 
 ## Place the origin behind the Worker
 
-You run `services/api/api.py` as the origin. The Worker in `plane/cloudflare` is the public edge.
+You run `services/api/api.py` as the origin. `plane/cloudflare` is the public Worker.
 
 Unauthenticated `/api/*` and `/ledger/*` requests receive `401` at the edge. Direct origin access in strict mode receives `403`. `/health` stays reachable for probes.
 
 Set `CLOUDFLARE_ORIGIN_MODE=strict` on the origin when Cloudflare proxies production traffic.
 
-## Configure Workers AI translation
+The Worker serves [static assets](https://developers.cloudflare.com/workers/static-assets/) from `plane/cloudflare/dist` through the `ASSETS` binding.
 
-`POST /api/translate` calls Cloudflare Workers AI model `@cf/meta/m2m100-1.2b` through the v4 AI run URL.
+## Create a Workers AI token
 
-Export these values in the origin environment. Do not commit them.
+You need an Account ID and a token with Workers AI Read and Workers AI Edit. Create them from the Cloudflare dashboard as described in the [Workers AI REST API guide](https://developers.cloudflare.com/workers-ai/get-started/rest-api/).
+
+Export the values in the origin environment. Do not commit them.
 
 ```sh
 export CLOUDFLARE_ACCOUNT_ID=<YOUR_ACCOUNT_ID>
 export CLOUDFLARE_API_TOKEN=<YOUR_API_TOKEN>
 ```
 
-The origin reads the account identifier and token from the environment. It attaches the token to the outbound Workers AI request only. Catalogs, ledger entries, and HTTP responses omit the token.
+The origin reads those values from the environment. It attaches the token only to the outbound [Execute AI model](https://developers.cloudflare.com/api/resources/ai/methods/run/) request. Catalogs, ledger entries, and HTTP responses omit the token.
 
-Example request body:
+## Run translation
+
+`POST /api/translate` runs [`@cf/meta/m2m100-1.2b`](https://developers.cloudflare.com/workers-ai/models/m2m100-1.2b/). That model is a many-to-many translation encoder-decoder.
+
+The documented request body requires `text` and `target_lang`. `source_lang` defaults to `en`.
 
 ```json
 {
   "text": "hello",
-  "source_lang": "english",
-  "target_lang": "french"
+  "source_lang": "en",
+  "target_lang": "fr"
 }
 ```
 
 The origin hashes the text with SHA-256 before it returns a result. If the token is missing, the route returns `503`.
 
+On the Worker, bounded `POST /api/translate` calls `env.AI.run()` through the [Workers AI binding](https://developers.cloudflare.com/workers-ai/configuration/bindings/). The Wrangler file declares `ai.binding = "AI"` and does not store tokens.
+
 :::note[Kernel catalog]
-`python -m council_os cloudflare` records enabled products. It does not log in to a live account and it does not store API tokens.
+`python -m council_os cloudflare` records enabled products, including Workers AI. It does not log in to a live account and it does not store API tokens.
 :::
 
 ## Inspect the edge contract
@@ -52,3 +60,5 @@ The origin hashes the text with SHA-256 before it returns a result. If the token
 - `POST /api/translate` — Workers AI translation
 
 Deploy the Worker with Wrangler from `plane/cloudflare`. `ORIGIN_URL` points at the origin. Keep API tokens out of `wrangler.toml`.
+
+Official source: [cloudflare/cloudflare-docs](https://github.com/cloudflare/cloudflare-docs).

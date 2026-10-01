@@ -21,6 +21,9 @@ export default {
           headers: boundedHeaders,
         });
       }
+      if (path === "/api/translate" && req.method === "POST" && env.AI) {
+        return translateAtEdge(req, env, boundedHeaders);
+      }
       return proxyToOrigin(req, env, path, url.search);
     }
 
@@ -30,6 +33,42 @@ export default {
     return new Response("Not found", { status: 404, headers: boundedHeaders });
   },
 };
+
+async function translateAtEdge(req, env, boundedHeaders) {
+  let body;
+  try {
+    body = await req.json();
+  } catch (err) {
+    return Response.json(
+      { status: "invalid JSON body", stores_secrets: false },
+      { status: 400, headers: boundedHeaders }
+    );
+  }
+  const text = body && body.text;
+  const target = body && body.target_lang;
+  const source = (body && body.source_lang) || "en";
+  if (!text || !target) {
+    return Response.json(
+      { status: "text and target_lang are required", stores_secrets: false },
+      { status: 400, headers: boundedHeaders }
+    );
+  }
+  const result = await env.AI.run("@cf/meta/m2m100-1.2b", {
+    text,
+    source_lang: source,
+    target_lang: target,
+  });
+  return Response.json(
+    {
+      model: "@cf/meta/m2m100-1.2b",
+      source_lang: source,
+      target_lang: target,
+      result,
+      stores_secrets: false,
+    },
+    { headers: boundedHeaders }
+  );
+}
 
 async function proxyToOrigin(req, env, path, search) {
   const origin = env.ORIGIN_URL;
