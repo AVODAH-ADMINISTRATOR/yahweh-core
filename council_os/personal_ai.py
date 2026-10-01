@@ -110,5 +110,6 @@ class ComparativePersonalAI:
         }
 
     def refuse(self, action: str) -> None:
-        if action in FORBIDDEN_COMPARE_ACTIONS or action:
+        normalized = str(action).strip()
+        if normalized in FORBIDDEN_COMPARE_ACTIONS or not normalized:
             raise CharterViolation("NO_PERSONALIZED_WILL")

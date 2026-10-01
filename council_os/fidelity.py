@@ -23,9 +23,7 @@ class FidelityGate:
         tags = {str(tag).lower() for tag in request.get("tags", [])}
         intent = str(request.get("intent", "")).lower()
         harmful = {"harm", "weapon", "exploit", "abuse"}
-        if tags & harmful or any(word in intent for word in harmful):
-            return True
-        return True
+        return bool(tags & harmful or any(word in intent for word in harmful))
 
     def score(self) -> Dict[str, Any]:
         self.lock.assert_intact()

@@ -164,5 +164,6 @@ class BusinessGovernance:
         }
 
     def refuse(self, action: str) -> None:
-        if action in FORBIDDEN_BUSINESS_ACTIONS or action:
+        normalized = str(action).strip()
+        if normalized in FORBIDDEN_BUSINESS_ACTIONS or not normalized:
             raise CharterViolation("NO_AI_COMMIT_POLICY")

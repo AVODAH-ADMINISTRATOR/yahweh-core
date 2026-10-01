@@ -241,7 +241,8 @@ class EthiopicCorpus:
         raise CharterViolation("ethiopic corpus must remain unabridged")
 
     def refuse_abridgement(self, action: str) -> None:
-        if action in FORBIDDEN_ABRIDGEMENT or action:
+        normalized = str(action).strip()
+        if normalized in FORBIDDEN_ABRIDGEMENT or not normalized:
             raise CharterViolation("ethiopic corpus must remain unabridged")
 
     def books(self) -> List[Dict[str, str]]:

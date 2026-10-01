@@ -102,9 +102,9 @@ class CompatibilityShell:
         return profile
 
     def host_action(self, action: str) -> None:
-        if action in FORBIDDEN_HOST_ACTIONS:
+        normalized = str(action).strip()
+        if normalized in FORBIDDEN_HOST_ACTIONS or not normalized:
             raise CharterViolation("HOST_HARDWARE_DECOUPLED")
-        raise CharterViolation("HOST_HARDWARE_DECOUPLED")
 
     def timeline(self) -> Dict[str, Any]:
         return {
