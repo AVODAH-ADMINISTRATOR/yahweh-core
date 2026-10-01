@@ -4,6 +4,7 @@
 .config/
 .venv/
 node_modules/
+__pycache__/
 *.zip
 drive_sync.py
 requirements.txt
