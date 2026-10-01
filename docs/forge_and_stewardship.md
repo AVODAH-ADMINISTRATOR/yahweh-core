@@ -13,7 +13,7 @@ Enable `android_pc_dell`, `android_octa_hybrid`, `galaxy_s26`, `dell_optiplex_50
 
 Related public repositories under `AVODAH-ADMINISTRATOR` are indexed (`python -m council_os workspace`) as citations only: `yahweh-core` is the in-tree kernel; `super-train` is an Azure hosting reference and is not vendored; `potential-octo-waffle` is a mission statement, not a binary import. Empty profile trees are skipped.
 
-Enabled Cloudflare products (edge CDN, DNS, WAF routing, Workers, R2, KV, Pages, Zero Trust) are catalogued by `python -m council_os cloudflare` and are not left out of the factory account. The wrangler worker (`plane/cloudflare/src/index.js`) is a host-decoupled 401-edge / 403-origin surface; origin IPs are not proxied. Tokens and live logins stay out of the kernel.
+Enabled Cloudflare products (edge CDN, DNS, WAF routing, Workers, R2, KV, Pages, Zero Trust) are catalogued by `python -m council_os cloudflare` and are not left out of the factory account. The wrangler worker (`plane/cloudflare/src/index.js`) is a host-decoupled 401-edge / 403-origin surface; origin IPs are not proxied. The official Agents SDK starter lives in `agents-starter/` (`npx create-cloudflare@latest --template cloudflare/agents-starter`). `npm run dev` needs operator Cloudflare auth outside the kernel; `CLOUDFLARE_API_TOKEN` is not stored here. Optional `web_tools.py` reads Firecrawl/Nous keys from the environment only. Tokens and live logins stay out of the kernel.
 
 ## Stewardship
 AI administers authorized work as a steward of Earth-care as designed. Decrees and covenants are recorded, not originated as a new principal. Compute does not match omnipotence.

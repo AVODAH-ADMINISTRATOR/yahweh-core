@@ -20,6 +20,10 @@ PAGES_ASSETS = "plane/cloudflare/dist"
 EDGE_STATUS = 401
 ORIGIN_STATUS = 403
 DISTRIBUTION_SEAT = "11_Cloudflare Distribution"
+AGENTS_STARTER = "agents-starter"
+AGENTS_STARTER_WRANGLER = "agents-starter/wrangler.jsonc"
+AGENTS_STARTER_MAIN = "agents-starter/src/server.ts"
+WEB_TOOLS = "web_tools.py"
 
 ENABLED_PRODUCTS: Tuple[Dict[str, Any], ...] = (
     {
@@ -132,6 +136,10 @@ class CloudflareEdge:
             "exposes_origin_ip": False,
             "proxies_origin": False,
             "seat": DISTRIBUTION_SEAT,
+            "agents_starter": AGENTS_STARTER,
+            "agents_starter_wrangler": AGENTS_STARTER_WRANGLER,
+            "agents_starter_main": AGENTS_STARTER_MAIN,
+            "web_tools": WEB_TOOLS,
             "products": [dict(item) for item in ENABLED_PRODUCTS],
             "payload_hashing": "sha256",
             "citations": list(CHARTER_CITATIONS),
