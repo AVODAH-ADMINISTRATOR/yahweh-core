@@ -1,45 +1,4 @@
-name = "yahweh-core-360"
-type = "javascript"
-compatibility_date = "2026-09-30"
-account_id = "b08a2817"
-
-# Static assets — 360° UI
+name="yahweh-core-360"
+compatibility_date="2026-09-30"
 [assets]
-directory = "./dist"
-not_found_handling = "single-page-application"
-
-# Worker routing
-cd ~/yahweh-core/plane/cloudflare
-mkdir -p dist src
-
-# wrangler.toml — canonical
-cat > wrangler.toml <<'TOML'
-name = "yahweh-core-360"
-type = "javascript"
-compatibility_date = "2026-09-30"
-account_id = "b08a2817"
-
-# Static assets — 360° UI
-[assets]
-directory = "./dist"
-not_found_handling = "single-page-application"
-
-# Worker routing — API proxy
-[vars]
-ORIGIN_URL = "http://localhost:3000"
-RADIANCE = "1790814470.9034488"
-OS_ID = "b08a2817ae416c8d6d134a7937"
-
-# No secrets in toml — tokens via env
-[observability]
-enabled = true
-
-# Routes — 360° endpoint
-[[routes]]
-pattern = "360.yahweh-core.workers.dev/*"
-zone_name = "yahweh-core.workers.dev"
-
-# NIST headers enforced at edge
-[assets]
-[assets.headers]
-"/*" = { "X-Frame-Options" = "DENY", "X-Content-Type-Options" = "nosniff", "Referrer-Policy" = "strict-origin-when-cross-origin", "Permissions-Policy" = "camera=(), microphone=(), geolocation=()" }
+directory="./dist"
