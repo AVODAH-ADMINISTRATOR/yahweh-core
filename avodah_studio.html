@@ -322,26 +322,25 @@
     </footer>
   </aside>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "tone": "https://cdn.jsdelivr.net/npm/tone@14.8.49/+esm"
-    }
-  }
-  </script>
+  <!-- Vendored offline: see vendor/README.md (three@0.160.0, tone@14.8.49) -->
+  <script src="vendor/tone/Tone.js"></script>
   <script type="module">
-    import * as THREE from "three";
-    import * as Tone from "tone";
+    import * as THREE from "./vendor/three/three.module.min.js";
+    const Tone = window.Tone;
+    if (!Tone) {
+      document.getElementById("transportStatus").textContent = "Tone.js failed to load (vendor/tone/Tone.js).";
+      document.getElementById("transportStatus").className = "status-line err";
+      throw new Error("Tone.js failed to load from vendor/tone/Tone.js");
+    }
 
     const DECK_SLIDES = [
-      "images/avodah_title_slide_1.webp",
-      "images/avodah_response_slide.webp",
-      "images/colossians_slide_design.webp",
-      "images/prayer_reorders_desire_slide.webp",
-      "images/slide2_hosea_spiritual_adultery.webp",
-      "images/slide3_psalm85_steadfast_love_faithfulness.webp",
-      "images/slide7_closing_wheat.webp",
+      "images/deck/01_avodah_title.svg",
+      "images/deck/02_response.svg",
+      "images/deck/03_colossians.svg",
+      "images/deck/04_prayer_desire.svg",
+      "images/deck/05_hosea.svg",
+      "images/deck/06_psalm85.svg",
+      "images/deck/07_closing_wheat.svg",
     ];
 
     const els = {
@@ -460,6 +459,8 @@
         path,
         (tex) => {
           tex.colorSpace = THREE.SRGBColorSpace;
+          tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+          tex.needsUpdate = true;
           if (screen.material.map) screen.material.map.dispose();
           screen.material.map = tex;
           screen.material.color.set(0xffffff);
@@ -493,6 +494,9 @@
     }
     resizeRenderer();
     window.addEventListener("resize", resizeRenderer);
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(resizeRenderer).observe(els.auditorium);
+    }
 
     function animate() {
       requestAnimationFrame(animate);
@@ -575,7 +579,7 @@
       try {
         await ensureAudio();
         stopToneBed();
-        if (hasTrack) {
+        if (hasTrack && player.loaded) {
           if (player.state === "started") player.stop();
           player.start();
           setStatus(els.transportStatus, "Playing loaded sermon audio.", "ok");
@@ -679,18 +683,20 @@
         if (objectUrl) URL.revokeObjectURL(objectUrl);
         objectUrl = URL.createObjectURL(file);
         stopTrack();
+        hasTrack = false;
         player.dispose();
         player = new Tone.Player({
           url: objectUrl,
           loop: true,
           fadeIn: 0.05,
           fadeOut: 0.08,
-          onload: () => {
-            hasTrack = true;
-            setStatus(els.transportStatus, `Loaded: ${file.name}`, "ok");
-          },
         }).connect(sermonGain);
+        setStatus(els.transportStatus, `Loading: ${file.name}…`, "warn");
+        await player.load(objectUrl);
+        hasTrack = true;
+        setStatus(els.transportStatus, `Loaded: ${file.name}`, "ok");
       } catch (err) {
+        hasTrack = false;
         setStatus(els.transportStatus, `Load failed: ${err.message || err}`, "err");
       }
     });
