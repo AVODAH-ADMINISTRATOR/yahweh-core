@@ -15,7 +15,12 @@ import sys
 from pathlib import Path
 from typing import Iterable, List
 
-from council_os.constraints import CONSTRAINT_LOCK_VERSION, IMMUTABLE_CONSTRAINTS, CharterViolation
+from council_os.constraints import (
+    CONSTRAINT_LOCK_VERSION,
+    FORBIDDEN_BIND_PATHS,
+    IMMUTABLE_CONSTRAINTS,
+    CharterViolation,
+)
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = PACKAGE_ROOT.parent
@@ -30,17 +35,38 @@ FORBIDDEN_DEFINITIONS = (
     re.compile(r"internal_reward_loop\s*="),
     re.compile(r"self_modify_source\s*\("),
 )
-
+FORBIDDEN_PATH_PATTERNS = tuple(
+    re.compile(re.escape(path)) for path in sorted(FORBIDDEN_BIND_PATHS)
+)
 SCAN_SKIP_NAMES = frozenset({"policy.py", "constraints.py"})
+SCAN_SUFFIXES = frozenset({".py", ".js", ".ts", ".jsx", ".tsx"})
 
 
-def load_lockfile() -> dict:
-    with LOCKFILE.open(encoding="utf-8") as handle:
+def _resolve_project_root(repo_root: Path | None = None) -> Path:
+    root = (repo_root or REPO_ROOT).resolve()
+    if root.name == "council_os":
+        return root
+    candidate = root / "council_os"
+    if candidate.is_dir():
+        return candidate
+    return root
+
+
+def _resolve_lockfile(repo_root: Path | None = None) -> Path:
+    if repo_root is None:
+        return LOCKFILE
+    root = _resolve_project_root(repo_root)
+    return root / "charter_lock.json"
+
+
+def load_lockfile(lockfile: Path | None = None) -> dict:
+    target = lockfile or _resolve_lockfile()
+    with target.open(encoding="utf-8") as handle:
         return json.load(handle)
 
 
-def verify_lockfile() -> None:
-    lock = load_lockfile()
+def verify_lockfile(repo_root: Path | None = None) -> None:
+    lock = load_lockfile(_resolve_lockfile(repo_root))
     if lock.get("lock_version") != CONSTRAINT_LOCK_VERSION:
         raise CharterViolation("charter lock version mismatch")
     locked = frozenset(lock.get("constraints", []))
@@ -58,8 +84,12 @@ def verify_lockfile() -> None:
 
 
 def _iter_production_python(root: Path) -> Iterable[Path]:
-    for path in root.rglob("*.py"):
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
         if "tests" in path.parts or path.name in SCAN_SKIP_NAMES:
+            continue
+        if path.suffix.lower() not in SCAN_SUFFIXES:
             continue
         yield path
 
@@ -67,16 +97,16 @@ def _iter_production_python(root: Path) -> Iterable[Path]:
 def scan_tree(root: Path) -> List[str]:
     issues: List[str] = []
     for path in _iter_production_python(root):
-        text = path.read_text(encoding="utf-8")
-        for pattern in FORBIDDEN_DEFINITIONS:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for pattern in FORBIDDEN_DEFINITIONS + FORBIDDEN_PATH_PATTERNS:
             if pattern.search(text):
                 issues.append(f"{path}: forbidden definition matching {pattern.pattern}")
     return issues
 
 
 def compile_policy(repo_root: Path | None = None) -> dict:
-    verify_lockfile()
-    target = (repo_root or REPO_ROOT) / "council_os"
+    target = _resolve_project_root(repo_root)
+    verify_lockfile(target)
     issues = scan_tree(target)
     if issues:
         raise CharterViolation("compile-time policy failed:\n" + "\n".join(issues))
