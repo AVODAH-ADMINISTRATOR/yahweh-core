@@ -1,0 +1,45 @@
+{
+  "event": "hourly_status_verification",
+  "core_id": "b08a2817",
+  "timestamp_cdt": "2026-10-01T08:35:00-05:00",
+  "timestamp_utc": "2026-10-01T13:35:00Z",
+  "status": "confirmed",
+  "kernel": {
+    "name": "Council OS eight-domain kernel",
+    "transition": "successful",
+    "vault_drift": false,
+    "domains": [
+      "identity",
+      "ledger",
+      "linguistic_nlp",
+      "textual_criticism",
+      "scout_edge",
+      "governance",
+      "treasury",
+      "sentinel"
+    ],
+    "charter_adherence": true,
+    "virtualized": true,
+    "host_decoupled": true,
+    "deployment_pace_hz": 1.0
+  },
+  "vault": {
+    "secure": true,
+    "plaintext_exposure": false,
+    "keys_nonces_tags_verified": true
+  },
+  "path_correction": {
+    "issue": "HOME=/public directory inconsistency from 12:34 container",
+    "permanent_fix": "HOME=/root",
+    "repo_root": "/root/yahweh-core",
+    "applied": true
+  },
+  "pending_non_blocking": [
+    "environment variable drops and Mesa/LLVM library mismatches (config bypass)",
+    "Google Cloud SDK and link authentication unresolved",
+    "final modules await encryption within fulfillment memory after Q1 POS validation"
+  ],
+  "dashboard_api_traffic": "within_authorized_limits",
+  "observability_alignment": "in_progress",
+  "maritime_navigation_protocols": "locked_pending_final_adjustments"
+}

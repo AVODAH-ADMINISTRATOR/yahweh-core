@@ -2,6 +2,9 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+ENV HOME=/root
+ENV YAHWEH_CORE_HOME=/root/yahweh-core
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

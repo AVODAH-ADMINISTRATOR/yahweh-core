@@ -49,6 +49,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=identity
       - COUNCIL_OS_PORT=8101
     ports:
@@ -59,6 +61,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=ledger
       - COUNCIL_OS_PORT=8102
     ports:
@@ -69,6 +73,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=linguistic_nlp
       - COUNCIL_OS_PORT=8103
     ports:
@@ -79,6 +85,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=textual_criticism
       - COUNCIL_OS_PORT=8104
     ports:
@@ -89,6 +97,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=scout_edge
       - COUNCIL_OS_PORT=8105
     ports:
@@ -99,6 +109,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=governance
       - COUNCIL_OS_PORT=8106
     ports:
@@ -109,6 +121,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=treasury
       - COUNCIL_OS_PORT=8107
     ports:
@@ -119,6 +133,8 @@ services:
       context: ../council_os
       dockerfile: Dockerfile
     environment:
+      - HOME=/root
+      - YAHWEH_CORE_HOME=/root/yahweh-core
       - COUNCIL_OS_DOMAIN=sentinel
       - COUNCIL_OS_PORT=8108
     ports:

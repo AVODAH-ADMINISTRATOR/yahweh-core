@@ -22,6 +22,7 @@ from council_os.hitl import HITLGate, Proposal, ScholarSignoff
 from council_os.jobs import AuthorizedJob, HumanAuthorization, JobScheduler
 from council_os.ledger import DualControlApproval, LifecycleLedger
 from council_os.manifests import HumanApproval, ManifestRegistry, SignedManifest
+from council_os.paths import assert_home_canonical
 from council_os.policy import compile_policy
 
 
@@ -50,7 +51,9 @@ class CouncilOSKernel:
 
     def compile(self) -> Dict[str, Any]:
         self.lock.assert_intact()
+        paths = assert_home_canonical()
         report = compile_policy()
+        report = {**report, "paths": paths}
         self.compiled = True
         self.ledger.append(KernelDomain.GOVERNANCE, "KERNEL_COMPILE", report)
         return report
@@ -62,6 +65,7 @@ class CouncilOSKernel:
             "personalized_will": False,
             "virtualized": True,
             "host_decoupled": True,
+            "paths": assert_home_canonical(),
             "domains": self.mesh.health_snapshot(),
             "ledger_head": self.ledger.head_hash(),
             "chain_ok": self.ledger.verify_chain(),

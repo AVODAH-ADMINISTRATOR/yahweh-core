@@ -25,6 +25,10 @@ spec:
         ports:
         - containerPort: 8101
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "identity"
         - name: COUNCIL_OS_PORT
@@ -73,6 +77,10 @@ spec:
         ports:
         - containerPort: 8102
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "ledger"
         - name: COUNCIL_OS_PORT
@@ -121,6 +129,10 @@ spec:
         ports:
         - containerPort: 8103
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "linguistic_nlp"
         - name: COUNCIL_OS_PORT
@@ -169,6 +181,10 @@ spec:
         ports:
         - containerPort: 8104
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "textual_criticism"
         - name: COUNCIL_OS_PORT
@@ -217,6 +233,10 @@ spec:
         ports:
         - containerPort: 8105
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "scout_edge"
         - name: COUNCIL_OS_PORT
@@ -265,6 +285,10 @@ spec:
         ports:
         - containerPort: 8106
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "governance"
         - name: COUNCIL_OS_PORT
@@ -313,6 +337,10 @@ spec:
         ports:
         - containerPort: 8107
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "treasury"
         - name: COUNCIL_OS_PORT
@@ -361,6 +389,10 @@ spec:
         ports:
         - containerPort: 8108
         env:
+        - name: HOME
+          value: "/root"
+        - name: YAHWEH_CORE_HOME
+          value: "/root/yahweh-core"
         - name: COUNCIL_OS_DOMAIN
           value: "sentinel"
         - name: COUNCIL_OS_PORT

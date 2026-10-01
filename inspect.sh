@@ -6,13 +6,13 @@ echo "--- 0. PRIVILEGE & OS ---"
 whoami; id; cat /etc/os-release | grep -E 'PRETTY|VERSION'; uname -r; uptime; echo ""
 
 echo "--- 1. CPU / MEM / DISK / LOAD ---"
-lscpu | grep -E 'Model name|CPU\(s\)|Thread|Core'; free -h; df -h / /public 2>/dev/null | head -10; vmstat 1 2 | tail -1; echo ""
+lscpu | grep -E 'Model name|CPU\(s\)|Thread|Core'; free -h; df -h / /root 2>/dev/null | head -10; vmstat 1 2 | tail -1; echo ""
 
 echo "--- 2. NETWORK & DNS & GATEWAY ---"
 ip -br a; ip r | head -10; ss -tlnp | head -30; cat /etc/resolv.conf | grep -v '^#'; ping -c1 1.1.1.1 2>&1 | tail -1; ping -c1 download.virtualbox.org 2>&1 | tail -1; echo ""
 
 echo "--- 3. DOAS / SUDO / PERMISSIONS ---"
-ls -l /etc/doas.conf /etc/sudoers 2>&1; cat /etc/doas.conf 2>/dev/null; groups; ls -ld /public/yahweh-core; echo ""
+ls -l /etc/doas.conf /etc/sudoers 2>&1; cat /etc/doas.conf 2>/dev/null; groups; ls -ld /root/yahweh-core; echo ""
 
 echo "--- 4. APT / REPO HEALTH ---"
 apt-get check 2>&1 | tail -5; ls -l /etc/apt/sources.list.d/; cat /etc/apt/sources.list.d/virtualbox.list 2>/dev/null || echo "vbox repo: missing"; apt-cache policy tinyproxy virtualbox-7.0 2>&1 | head -40; echo ""
@@ -34,7 +34,7 @@ echo "--- 7. KERNEL MODULES & DKMS ---"
 dkms status 2>&1 | head -30; dmesg | grep -i -E 'vbox|tinyproxy|error|fail' | tail -20; echo ""
 
 echo "--- 8. FILESYSTEM INTEGRITY & DEPLOY SCRIPTS ---"
-cd /public/yahweh-core; pwd; ls -lh *.sh 2>&1; bash -n ./tinyproxy_deploy.sh && echo tinyproxy_deploy:syntax:ok || echo tinyproxy_deploy:syntax:FAIL; bash -n ./vbox_deploy.sh && echo vbox_deploy:syntax:ok || echo vbox_deploy:syntax:FAIL; git status --short; echo ""
+cd /root/yahweh-core; pwd; ls -lh *.sh 2>&1; bash -n ./tinyproxy_deploy.sh && echo tinyproxy_deploy:syntax:ok || echo tinyproxy_deploy:syntax:FAIL; bash -n ./vbox_deploy.sh && echo vbox_deploy:syntax:ok || echo vbox_deploy:syntax:FAIL; git status --short; echo ""
 
 echo "--- 9. SECURITY POSTURE ---"
 cat /etc/tinyproxy/tinyproxy.conf 2>/dev/null | grep -E 'Listen|Allow' | head -10

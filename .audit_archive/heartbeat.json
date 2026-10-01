@@ -1,1 +1,8 @@
-{"ts":"2026-09-30T18:54:35Z","id":"b08a2817","flow":"ONE"}
+{
+  "ts": "2026-10-01T13:35:00Z",
+  "id": "b08a2817",
+  "flow": "ONE",
+  "status_verification": "2026-10-01T08:35:00-05:00",
+  "home": "/root",
+  "vault_drift": false
+}
