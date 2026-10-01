@@ -526,6 +526,7 @@
     let mediaRecorder = null;
     let recordedChunks = [];
     let toneBed = null;
+    let recordDest = null;
 
     function applyMix() {
       const volDb = Number(els.vol.value);
@@ -628,24 +629,16 @@
         mic1 = new Tone.UserMedia();
         await mic1.open();
         mic1.connect(mic1Gain);
+        // Worship bus is gain-staged from the same input (single device).
+        mic1.connect(mic2Gain);
+        mic2 = null;
 
-        mic2 = new Tone.UserMedia();
-        try {
-          await mic2.open();
-          mic2.connect(mic2Gain);
-        } catch (_) {
-          mic2 = null;
-          setStatus(
-            els.transportStatus,
-            "One mic available — worship bus mirrors pastor input gain staging.",
-            "warn"
-          );
+        if (!recordDest) {
+          recordDest = Tone.context.createMediaStreamDestination();
+          master.connect(recordDest);
         }
-
-        const dest = Tone.context.createMediaStreamDestination();
-        master.connect(dest);
         recordedChunks = [];
-        mediaRecorder = new MediaRecorder(dest.stream);
+        mediaRecorder = new MediaRecorder(recordDest.stream);
         mediaRecorder.ondataavailable = (ev) => {
           if (ev.data && ev.data.size > 0) recordedChunks.push(ev.data);
         };
