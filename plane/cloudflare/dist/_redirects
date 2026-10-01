@@ -1,0 +1,6 @@
+# Static -> edge, API -> Worker proxy (handled in Worker, but Pages needs rule)
+# 360° perception endpoints
+/api/* https://origin.yahweh-core.internal:3000/api/:splat 200
+/ledger/* https://origin.yahweh-core.internal:3000/ledger/:splat 200
+/health https://origin.yahweh-core.internal:3000/health 200
+/* /index.html 200
