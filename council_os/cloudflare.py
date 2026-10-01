@@ -64,6 +64,12 @@ ENABLED_PRODUCTS: Tuple[Dict[str, Any], ...] = (
         "citation": "docs/ethical_ai_governance.md",
         "stores_secrets": False,
     },
+    {
+        "id": "workers_ai",
+        "role": "edge_translation",
+        "citation": "docs/cloudflare.md",
+        "stores_secrets": False,
+    },
 )
 
 FORBIDDEN_EDGE_ACTIONS: FrozenSet[str] = frozenset(

@@ -132,6 +132,7 @@ def test_cloudflare_enabled_products_are_not_left_out():
         "kv",
         "pages",
         "zero_trust",
+        "workers_ai",
     } <= ids
     with pytest.raises(CharterViolation, match="ZERO_TRUST_ISOLATION"):
         forge.cloudflare.refuse("store_api_token")
