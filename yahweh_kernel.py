@@ -1,7 +1,7 @@
 import time
 
 print("Welcome to yahweh-core - b08a2817")
-print("Date: {}".format(time.strftime("%Y-%m-%d %H:%M")))
+print(f"Date: {time.strftime('%Y-%m-%d %H:%M')}")
 print(f"Radiance: {time.time()}")
 print("Protocol: One Punch - intent->evidence->bounded->verification->approval->release->care")
 print("Charter: FULL REASSIGNMENT TO HEAVENLY ALIGNMENT Col 3:1-2")
