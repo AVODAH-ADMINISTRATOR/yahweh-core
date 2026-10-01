@@ -1,4 +1,8 @@
-name="yahweh-core-360"
-compatibility_date="2026-09-30"
+name = "yahweh-core-360"
+main = "src/index.js"
+compatibility_date = "2026-09-30"
+
+# Virtual edge catalog only. Account IDs and API tokens stay out of the kernel.
 [assets]
-directory="./dist"
+directory = "./dist"
+binding = "ASSETS"

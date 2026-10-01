@@ -10,7 +10,7 @@ from council_os.constraints import CharterViolation
 from council_os.forge import AutoDeveloperForge
 from council_os.handset import HANDSET_ID
 from council_os.kernel import CouncilOSKernel
-from council_os.cloudflare import EDGE_ACCOUNT, ENABLED_PRODUCTS
+from council_os.cloudflare import EDGE_ACCOUNT, ENABLED_PRODUCTS, EDGE_STATUS, ORIGIN_STATUS, WRANGLER_CONFIG
 from council_os.workspace import OWNER, PERSONAL_REPOS
 
 
@@ -121,6 +121,11 @@ def test_cloudflare_enabled_products_are_not_left_out():
     assert edge["stores_secrets"] is False
     assert edge["live_login"] is False
     assert edge["tls"] == "1.3"
+    assert edge["wrangler_config"] == WRANGLER_CONFIG
+    assert edge["edge_status"] == EDGE_STATUS == 401
+    assert edge["origin_status"] == ORIGIN_STATUS == 403
+    assert edge["exposes_origin_ip"] is False
+    assert edge["proxies_origin"] is False
     ids = {item["id"] for item in edge["products"]}
     assert ids == {item["id"] for item in ENABLED_PRODUCTS}
     assert {
@@ -137,6 +142,8 @@ def test_cloudflare_enabled_products_are_not_left_out():
         forge.cloudflare.refuse("store_api_token")
     with pytest.raises(CharterViolation):
         forge.cloudflare.refuse("live_account_login")
+    with pytest.raises(CharterViolation, match="ZERO_TRUST_ISOLATION"):
+        forge.cloudflare.refuse("expose_origin_ip")
     report = forge.produce("op-1")
     assert report["cloudflare"] == EDGE_ACCOUNT
     assert report["cloudflare_left_out"] is False

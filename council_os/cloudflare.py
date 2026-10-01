@@ -14,6 +14,12 @@ from council_os.domains import CHARTER_CITATIONS, KernelDomain
 from council_os.ledger import LifecycleLedger
 
 EDGE_ACCOUNT = "cloudflare_enabled"
+WRANGLER_CONFIG = "plane/cloudflare/wrangler.toml"
+WORKER_MAIN = "plane/cloudflare/src/index.js"
+PAGES_ASSETS = "plane/cloudflare/dist"
+EDGE_STATUS = 401
+ORIGIN_STATUS = 403
+DISTRIBUTION_SEAT = "11_Cloudflare Distribution"
 
 ENABLED_PRODUCTS: Tuple[Dict[str, Any], ...] = (
     {
@@ -32,12 +38,17 @@ ENABLED_PRODUCTS: Tuple[Dict[str, Any], ...] = (
         "id": "waf_routing",
         "role": "endpoint_obfuscation",
         "citation": "docs/ethical_ai_governance.md",
+        "edge_status": EDGE_STATUS,
+        "origin_status": ORIGIN_STATUS,
         "stores_secrets": False,
     },
     {
         "id": "workers",
         "role": "edge_compute",
         "citation": "docs/ethical_ai_governance.md",
+        "path": WORKER_MAIN,
+        "edge_status": EDGE_STATUS,
+        "origin_status": ORIGIN_STATUS,
         "stores_secrets": False,
     },
     {
@@ -56,6 +67,7 @@ ENABLED_PRODUCTS: Tuple[Dict[str, Any], ...] = (
         "id": "pages",
         "role": "static_workspace",
         "citation": "docs/digital_library.md",
+        "path": PAGES_ASSETS,
         "stores_secrets": False,
     },
     {
@@ -96,6 +108,8 @@ class CloudflareEdge:
                 "products": [item["id"] for item in ENABLED_PRODUCTS],
                 "stores_secrets": False,
                 "live_login": False,
+                "wrangler_config": WRANGLER_CONFIG,
+                "proxies_origin": False,
             },
         )
         return self.snapshot()
@@ -110,6 +124,14 @@ class CloudflareEdge:
             "stores_secrets": False,
             "live_login": False,
             "tls": "1.3",
+            "wrangler_config": WRANGLER_CONFIG,
+            "worker_main": WORKER_MAIN,
+            "pages_assets": PAGES_ASSETS,
+            "edge_status": EDGE_STATUS,
+            "origin_status": ORIGIN_STATUS,
+            "exposes_origin_ip": False,
+            "proxies_origin": False,
+            "seat": DISTRIBUTION_SEAT,
             "products": [dict(item) for item in ENABLED_PRODUCTS],
             "payload_hashing": "sha256",
             "citations": list(CHARTER_CITATIONS),
