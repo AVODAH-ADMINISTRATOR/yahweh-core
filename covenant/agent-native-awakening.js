@@ -14,8 +14,8 @@ function curateDataOnly(event, draft) {
     if (!summary || summary.length > 5000 || /<\/?[a-z][^>]*>/i.test(summary)) {
         throw new Error('Curator output summary must be bounded plain text');
     }
-    if (draft.completeness === 'incomplete' && !/^record incomplete\b/i.test(summary)) {
-        throw new Error('Incomplete curation must begin with "record incomplete"');
+    if (draft.completeness === 'incomplete' && !/^record incomplete:\s+\S/i.test(summary)) {
+        throw new Error('Incomplete curation must begin with "record incomplete:"');
     }
     if (!event.summary && draft.completeness !== 'incomplete') {
         throw new Error('Events without source summaries must be marked incomplete');
@@ -23,8 +23,11 @@ function curateDataOnly(event, draft) {
     if (!Array.isArray(draft.provenance) || draft.provenance.length === 0) {
         throw new Error('Curator output must include provenance');
     }
+    if (draft.provenance.length > 100) {
+        throw new Error('Curator output contains too many provenance references');
+    }
     const allowedProvenance = new Set(event.provenance);
-    const provenance = draft.provenance.map((source) => {
+    const provenance = Array.from(draft.provenance, (source) => {
         if (typeof source !== 'string' || !allowedProvenance.has(source)) {
             throw new Error('Curator output contains unsupported provenance');
         }
@@ -49,23 +52,47 @@ async function awakenAgentNativeCore(dependencies) {
     await dependencies.relational.initialize();
     const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
         let historicalEventId = 'unavailable';
-        let result = 'CURATION_REJECTED';
+        let event;
+        let component;
         try {
-            const event = (0, sanctuary_gateway_1.sanitize)(rawEvent);
+            event = (0, sanctuary_gateway_1.sanitize)(rawEvent);
             historicalEventId = event.id;
             const draft = await dependencies.curator.curate(event, dependencies.systemPrompt);
-            const component = curateDataOnly(event, draft);
-            await dependencies.relational.deployComponent(component);
-            result = 'CURATION_DEPLOYED';
+            component = curateDataOnly(event, draft);
         }
-        finally {
+        catch (error) {
             await dependencies.governanceLedger.append({
-                event: result,
+                event: 'CURATION_REJECTED',
                 stewardId,
                 historicalEventId,
                 timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
             });
+            throw error;
         }
+        await dependencies.governanceLedger.append({
+            event: 'CURATION_APPROVED',
+            stewardId,
+            historicalEventId,
+            timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+        });
+        try {
+            await dependencies.relational.deployComponent(component);
+        }
+        catch (error) {
+            await dependencies.governanceLedger.append({
+                event: 'CURATION_REJECTED',
+                stewardId,
+                historicalEventId,
+                timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+            });
+            throw error;
+        }
+        await dependencies.governanceLedger.append({
+            event: 'CURATION_DEPLOYED',
+            stewardId,
+            historicalEventId,
+            timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+        });
     });
     return { status: 'READY', stop: unsubscribe };
 }
