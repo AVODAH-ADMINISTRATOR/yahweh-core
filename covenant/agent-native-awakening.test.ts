@@ -86,7 +86,7 @@ describe('dependency-injected historical curator', () => {
       relational,
       curator: {
         async curate() {
-          return { summary: '<script>untrusted</script>', provenance: event.provenance, completeness: 'incomplete' }
+          return { summary: 'Founders Day was only partly recorded.', provenance: event.provenance, completeness: 'incomplete' }
         },
       },
       governanceLedger,
@@ -94,9 +94,27 @@ describe('dependency-injected historical curator', () => {
       systemPrompt: 'Do not fabricate.',
     })
 
-    await expect(catalog.emit(event)).rejects.toThrow('plain text')
+    await expect(catalog.emit(event)).rejects.toThrow('record incomplete')
     expect(relational.deployed).toHaveLength(0)
     expect(governanceLedger.records[0].event).toBe('CURATION_REJECTED')
+    runtime.stop()
+  })
+
+  it('records governance durably before deployment and rejects oversized provenance', async () => {
+    const catalog = mockCatalog()
+    const order: string[] = []
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational: { async initialize() {}, async deployComponent() { order.push('deploy') } },
+      curator: mockCurator(),
+      governanceLedger: { append(record) { order.push(record.event) } },
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+    await catalog.emit(event)
+    expect(order).toEqual(['CURATION_DEPLOYED', 'deploy'])
+    await expect(catalog.emit({ ...event, provenance: Array.from({ length: 51 }, (_, i) => `p${i}`) }))
+      .rejects.toThrow('too many provenance')
     runtime.stop()
   })
 })
