@@ -9,6 +9,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
+import threading
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from datetime import datetime, timezone
@@ -60,6 +62,27 @@ class DualControlApproval:
             raise CharterViolation("NO_SEALED_LEDGER_OVERRIDE_WITHOUT_DUAL_CONTROL") from exc
         if self.actor_a == self.actor_b:
             raise CharterViolation("NO_SEALED_LEDGER_OVERRIDE_WITHOUT_DUAL_CONTROL")
+
+
+SEAL_EVENT_PREFIX = "LEDGER_ENTRY_SEALED:"
+_SEAL_EVENT_RE = re.compile(r"^LEDGER_ENTRY_SEALED:(\d+)$")
+_ENTRY_ID_RE = re.compile(r"^\d{6}-[A-Z]{3}-[1-9]-[0-9a-f]{12}$")
+
+
+def parse_seal_target(event: str) -> Optional[int]:
+    """Return the sealed target index for a well-formed seal marker, else None."""
+    if not isinstance(event, str):
+        return None
+    match = _SEAL_EVENT_RE.fullmatch(event)
+    if match is None:
+        return None
+    return int(match.group(1), 10)
+
+
+def validate_entry_id(entry_id: str) -> str:
+    if not isinstance(entry_id, str) or _ENTRY_ID_RE.fullmatch(entry_id) is None:
+        raise CharterViolation("invalid ledger entry identifier")
+    return entry_id
 
 
 PII_KEYS = frozenset({
@@ -114,11 +137,20 @@ class LifecycleLedger:
         self.storage_path = Path(storage_path) if storage_path is not None else None
         self._entries: List[LedgerEntry] = []
         self._value_memory: Optional[str] = None
+        self._write_lock = threading.RLock()
         if self.storage_path is not None and self.storage_path.exists():
             try:
                 for line in self.storage_path.read_text(encoding="utf-8").splitlines():
                     if line.strip():
-                        self._entries.append(LedgerEntry(**json.loads(line)))
+                        raw = json.loads(line)
+                        entry = LedgerEntry(**raw)
+                        validate_entry_id(entry.entry_id)
+                        seal_target = parse_seal_target(entry.event)
+                        if seal_target is not None and seal_target >= entry.index:
+                            raise CharterViolation("invalid sealed ledger marker")
+                        self._entries.append(entry)
+            except CharterViolation:
+                raise
             except (OSError, TypeError, ValueError) as exc:
                 raise CharterViolation("invalid JSONL ledger") from exc
             if not self.verify_chain():
@@ -143,55 +175,88 @@ class LifecycleLedger:
         payload: Optional[Dict[str, Any]] = None,
         sealed: bool = False,
     ) -> LedgerEntry:
-        safe = redact_payload(payload or {})
-        payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
-        prev_hash = self.head_hash()
-        index = len(self._entries)
-        timestamp = _utc_now()
-        material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
-        entry_hash = sha256_hex(material)
-        entry = LedgerEntry(
-            index=index,
-            entry_id=self.record_id(index, domain.value, entry_hash),
-            domain=domain.value,
-            event=event,
-            payload_hash=payload_hash,
-            prev_hash=prev_hash,
-            entry_hash=entry_hash,
-            timestamp=timestamp,
-            sealed=sealed,
-            redacted=True,
-        )
-        if self.storage_path is not None:
-            self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-            encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
-            descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-            with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
-                handle.write(encoded)
-                handle.flush()
-                os.fsync(handle.fileno())
-        self._entries.append(entry)
-        return entry
+        with self._write_lock:
+            if not isinstance(event, str) or not event.strip():
+                raise CharterViolation("ledger event is required")
+            seal_target = parse_seal_target(event)
+            if event.startswith(SEAL_EVENT_PREFIX) and seal_target is None:
+                raise CharterViolation("invalid sealed ledger marker")
+            if seal_target is not None:
+                if seal_target < 0 or seal_target >= len(self._entries):
+                    raise CharterViolation("sealed marker target out of range")
+                target = self._entries[seal_target]
+                if payload is None:
+                    raise CharterViolation("sealed marker requires target identifier")
+                sealed_index = payload.get("sealed_index")
+                sealed_entry_id = payload.get("sealed_entry_id")
+                if sealed_index != seal_target:
+                    raise CharterViolation("sealed marker target mismatch")
+                validate_entry_id(str(sealed_entry_id) if sealed_entry_id is not None else "")
+                if sealed_entry_id != target.entry_id:
+                    raise CharterViolation("sealed marker target identifier mismatch")
+                sealed = True
+
+            safe = redact_payload(payload or {})
+            payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
+            prev_hash = self.head_hash()
+            index = len(self._entries)
+            timestamp = _utc_now()
+            material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
+            entry_hash = sha256_hex(material)
+            entry = LedgerEntry(
+                index=index,
+                entry_id=self.record_id(index, domain.value, entry_hash),
+                domain=domain.value,
+                event=event,
+                payload_hash=payload_hash,
+                prev_hash=prev_hash,
+                entry_hash=entry_hash,
+                timestamp=timestamp,
+                sealed=sealed,
+                redacted=True,
+            )
+            if self.storage_path is not None:
+                self.storage_path.parent.mkdir(parents=True, exist_ok=True)
+                encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
+                descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+                with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
+                    handle.write(encoded)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+            self._entries.append(entry)
+            return entry
 
     def seal(self, index: int) -> LedgerEntry:
-        if index < 0 or index >= len(self._entries):
-            raise CharterViolation("unknown ledger entry")
-        if self.is_sealed(index):
-            raise CharterViolation("ledger entry already sealed")
-        target = self._entries[index]
-        return self.append(
-            KernelDomain(target.domain),
-            f"LEDGER_ENTRY_SEALED:{index}",
-            {"sealed_index": index, "sealed_entry_id": target.entry_id},
-            sealed=True,
-        )
+        with self._write_lock:
+            if not isinstance(index, int) or isinstance(index, bool):
+                raise CharterViolation("unknown ledger entry")
+            if index < 0 or index >= len(self._entries):
+                raise CharterViolation("unknown ledger entry")
+            if self.is_sealed(index):
+                raise CharterViolation("ledger entry already sealed")
+            target = self._entries[index]
+            validate_entry_id(target.entry_id)
+            return self.append(
+                KernelDomain(target.domain),
+                f"{SEAL_EVENT_PREFIX}{index}",
+                {"sealed_index": index, "sealed_entry_id": target.entry_id},
+                sealed=True,
+            )
 
     def is_sealed(self, index: int) -> bool:
+        if not isinstance(index, int) or isinstance(index, bool):
+            return False
         if index < 0 or index >= len(self._entries):
             return False
-        return self._entries[index].sealed or any(
-            entry.event == f"LEDGER_ENTRY_SEALED:{index}" for entry in self._entries
-        )
+        if self._entries[index].sealed:
+            return True
+        for entry in self._entries:
+            target = parse_seal_target(entry.event)
+            if target is None:
+                continue
+            if target == index and entry.index > index:
+                return True
+        return False
 
     def rewrite(self, _index: int, _payload: Dict[str, Any]) -> None:
         raise CharterViolation("NO_SEALED_LEDGER_OVERRIDE_WITHOUT_DUAL_CONTROL")
@@ -204,20 +269,26 @@ class LifecycleLedger:
         approval: DualControlApproval,
         payload: Optional[Dict[str, Any]] = None,
     ) -> LedgerEntry:
-        approval.validate()
-        if not self.is_sealed(index):
-            raise CharterViolation("compensation requires a sealed source entry")
-        return self.append(
-            domain,
-            event,
-            {
-                "compensates": index,
-                "witness_a_hash": sha256_hex(approval.actor_a),
-                "witness_b_hash": sha256_hex(approval.actor_b),
-                "reason_hash": sha256_hex(approval.reason),
-                **(payload or {}),
-            },
-        )
+        with self._write_lock:
+            approval.validate()
+            if not isinstance(index, int) or isinstance(index, bool):
+                raise CharterViolation("compensation requires a sealed source entry")
+            if not self.is_sealed(index):
+                raise CharterViolation("compensation requires a sealed source entry")
+            target = self._entries[index]
+            validate_entry_id(target.entry_id)
+            return self.append(
+                domain,
+                event,
+                {
+                    "compensates": index,
+                    "compensates_entry_id": target.entry_id,
+                    "witness_a_hash": sha256_hex(approval.actor_a),
+                    "witness_b_hash": sha256_hex(approval.actor_b),
+                    "reason_hash": sha256_hex(approval.reason),
+                    **(payload or {}),
+                },
+            )
 
     def remember_value(self, _amount: Any) -> None:
         raise CharterViolation("NO_AI_VALUE_MEMORY")
@@ -230,6 +301,16 @@ class LifecycleLedger:
         for index, entry in enumerate(self._entries):
             if entry.index != index or entry.prev_hash != prev:
                 return False
+            try:
+                validate_entry_id(entry.entry_id)
+            except CharterViolation:
+                return False
+            seal_target = parse_seal_target(entry.event)
+            if entry.event.startswith(SEAL_EVENT_PREFIX) and seal_target is None:
+                return False
+            if seal_target is not None:
+                if seal_target < 0 or seal_target >= entry.index or not entry.sealed:
+                    return False
             material = (
                 f"{entry.index}:{entry.domain}:{entry.event}:{entry.payload_hash}:"
                 f"{entry.prev_hash}:{entry.timestamp}:{entry.sealed}"

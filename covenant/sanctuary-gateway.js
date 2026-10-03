@@ -1,13 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sanitize = sanitize;
+exports.FIELD_LIMITS = void 0;
 const FIELD_LIMITS = {
     id: 256,
     title: 240,
     date: 100,
     summary: 5000,
     provenance: 1000,
+    provenanceCount: 32,
 };
+exports.FIELD_LIMITS = FIELD_LIMITS;
 function cleanText(value, field, maxLength) {
     if (typeof value !== 'string') {
         throw new Error(`Invalid historical event: ${field} must be text`);
@@ -35,6 +38,9 @@ function sanitize(input) {
     const record = input;
     if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
         throw new Error('Invalid historical event: provenance is required');
+    }
+    if (record.provenance.length > FIELD_LIMITS.provenanceCount) {
+        throw new Error('Invalid historical event: too many provenance references');
     }
     return {
         id: cleanText(record.id, 'id', FIELD_LIMITS.id),

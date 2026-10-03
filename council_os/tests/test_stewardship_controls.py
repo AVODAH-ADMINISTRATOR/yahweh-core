@@ -137,3 +137,67 @@ def test_kernel_can_use_a_persistent_jsonl_ledger(tmp_path: Path):
     assert restored.verify_chain()
     assert len(restored) == len(kernel.ledger)
     assert any(entry.event == "KERNEL_BOOT" for entry in restored.entries)
+
+
+def test_ledger_serializes_concurrent_writers(tmp_path: Path):
+    import threading
+
+    path = tmp_path / "concurrent-ledger.jsonl"
+    ledger = LifecycleLedger(path)
+    errors: list[BaseException] = []
+
+    def worker(label: str) -> None:
+        try:
+            for index in range(20):
+                ledger.append(KernelDomain.LEDGER, f"EVT_{label}_{index}", {"n": index})
+        except BaseException as exc:  # pragma: no cover - collected below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(name,)) for name in ("a", "b", "c", "d")]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert len(ledger) == 80
+    assert ledger.verify_chain()
+    restored = LifecycleLedger(path)
+    assert restored.verify_chain()
+    assert len(restored) == 80
+
+
+def test_sealed_markers_require_valid_target_identifiers():
+    from council_os.ledger import DualControlApproval, parse_seal_target
+
+    ledger = LifecycleLedger()
+    original = ledger.append(KernelDomain.LEDGER, "ORIGINAL", {"value": "one"})
+    assert parse_seal_target("LEDGER_ENTRY_SEALED:0") == 0
+    assert parse_seal_target("LEDGER_ENTRY_SEALED:0x1") is None
+    assert parse_seal_target("LEDGER_ENTRY_SEALED:-1") is None
+
+    with pytest.raises(CharterViolation, match="invalid sealed ledger marker"):
+        ledger.append(
+            KernelDomain.LEDGER,
+            "LEDGER_ENTRY_SEALED:00abc",
+            {"sealed_index": 0, "sealed_entry_id": original.entry_id},
+        )
+    with pytest.raises(CharterViolation, match="target"):
+        ledger.append(
+            KernelDomain.LEDGER,
+            "LEDGER_ENTRY_SEALED:0",
+            {"sealed_index": 0, "sealed_entry_id": "000000-LDG-1-deadbeefdead"},
+        )
+    seal = ledger.seal(original.index)
+    assert seal.event == "LEDGER_ENTRY_SEALED:0"
+    assert ledger.is_sealed(original.index)
+    with pytest.raises(CharterViolation, match="already sealed"):
+        ledger.seal(original.index)
+    compensation = ledger.compensate_sealed(
+        original.index,
+        KernelDomain.LEDGER,
+        "COMPENSATION",
+        DualControlApproval("witness-a", "witness-b", "correction"),
+    )
+    assert compensation.event == "COMPENSATION"
+    assert ledger.verify_chain()
