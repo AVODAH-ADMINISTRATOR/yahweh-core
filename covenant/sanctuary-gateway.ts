@@ -1,3 +1,6 @@
+export const MAX_PROVENANCE_REFERENCES = 100
+export const MAX_PROVENANCE_REFERENCE_LENGTH = 1000
+
 export interface HistoricalEvent {
   id: string
   title: string
@@ -11,7 +14,7 @@ const FIELD_LIMITS = {
   title: 240,
   date: 100,
   summary: 5000,
-  provenance: 1000,
+  provenance: MAX_PROVENANCE_REFERENCE_LENGTH,
 } as const
 
 function cleanText(value: unknown, field: string, maxLength: number): string {
@@ -43,6 +46,9 @@ export function sanitize(input: unknown): HistoricalEvent {
   const record = input as Record<string, unknown>
   if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
     throw new Error('Invalid historical event: provenance is required')
+  }
+  if (record.provenance.length > MAX_PROVENANCE_REFERENCES) {
+    throw new Error(`Invalid historical event: provenance exceeds ${MAX_PROVENANCE_REFERENCES} references`)
   }
 
   return {

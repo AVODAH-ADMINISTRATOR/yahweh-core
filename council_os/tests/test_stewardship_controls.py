@@ -100,21 +100,61 @@ def test_treasury_approval_records_two_distinct_hashed_witnesses():
 
 
 def test_sealing_is_append_only_and_compensation_requires_two_witnesses():
-    from council_os.ledger import DualControlApproval
+    from council_os.ledger import DualControlApproval, sha256_hex
 
     ledger = LifecycleLedger()
     original = ledger.append(KernelDomain.LEDGER, "ORIGINAL", {"value": "one"})
+    with pytest.raises(CharterViolation, match="invalid ledger seal marker"):
+        ledger.append(
+            KernelDomain.LEDGER,
+            f"LEDGER_ENTRY_SEALED:{original.index}:wrong-id",
+            {"sealed_index": original.index, "sealed_entry_id": "wrong-id"},
+            sealed=True,
+        )
     seal = ledger.seal(original.index)
-    assert seal.event == f"LEDGER_ENTRY_SEALED:{original.index}"
+    assert seal.event == f"LEDGER_ENTRY_SEALED:{original.index}:{original.entry_id}"
     assert ledger.is_sealed(original.index)
+    assert not ledger.is_sealed(seal.index)
+    with pytest.raises(CharterViolation, match="cannot seal a ledger seal marker"):
+        ledger.seal(seal.index)
+    approval = DualControlApproval("witness-a", "witness-b", "correction")
+    with pytest.raises(CharterViolation, match="target does not match"):
+        ledger.compensate_sealed(
+            original.index,
+            KernelDomain.LEDGER,
+            "COMPENSATION",
+            approval,
+            {"compensates_entry_id": "wrong-id"},
+        )
     compensation = ledger.compensate_sealed(
         original.index,
         KernelDomain.LEDGER,
         "COMPENSATION",
-        DualControlApproval("witness-a", "witness-b", "correction"),
+        approval,
     )
     assert compensation.event == "COMPENSATION"
+    assert compensation.payload_hash == sha256_hex(json.dumps({
+        "compensates": original.index,
+        "compensates_entry_id": original.entry_id,
+        "witness_a_hash": sha256_hex("witness-a"),
+        "witness_b_hash": sha256_hex("witness-b"),
+        "reason_hash": sha256_hex("correction"),
+    }, sort_keys=True, default=str))
     assert ledger.verify_chain()
+
+
+def test_concurrent_ledger_writes_are_serialized_and_persisted(tmp_path: Path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    path = tmp_path / "concurrent-ledger.jsonl"
+    ledger = LifecycleLedger(path)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(lambda number: ledger.append(KernelDomain.LEDGER, "CONCURRENT", {"n": number}), range(100)))
+
+    restored = LifecycleLedger(path)
+    assert len(restored) == 100
+    assert [entry.index for entry in restored.entries] == list(range(100))
+    assert restored.verify_chain()
 
 
 def test_scheduled_actions_are_screened_before_dispatch():
