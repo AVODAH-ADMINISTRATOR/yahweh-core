@@ -314,6 +314,8 @@ class LifecycleLedger:
                 if target_index >= index or target_index in sealed_targets:
                     return False
                 target = self._entries[target_index]
+                if target.sealed:
+                    return False
                 expected_payload_hash = sha256_hex(json.dumps(
                     {"sealed_index": target_index, "sealed_entry_id": target.entry_id},
                     sort_keys=True,
