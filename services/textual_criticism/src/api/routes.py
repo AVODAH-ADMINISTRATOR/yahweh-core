@@ -4,13 +4,11 @@ from services.scoring import calculate_variant_score
 
 router = APIRouter()
 
-
 class VariantRequest(BaseModel):
     verse_ref: str
     base_text: str
     variant_text: str
     witnesses: list[str]
-
 
 class VariantResponse(BaseModel):
     verse_ref: str
@@ -19,12 +17,10 @@ class VariantResponse(BaseModel):
     witness_weight: float
     text_type_affinity: str
 
-
 @router.post("/variants/score", response_model=VariantResponse)
 def score_variant(request: VariantRequest):
     if not request.witnesses:
         raise HTTPException(status_code=400, detail="Must provide at least one manuscript witness.")
-
     score_data = calculate_variant_score(request.witnesses, request.variant_text)
     return VariantResponse(
         verse_ref=request.verse_ref,

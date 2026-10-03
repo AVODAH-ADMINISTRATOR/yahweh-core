@@ -1,19 +1,15 @@
-from __future__ import annotations
-
-
 def calculate_variant_score(witnesses: list[str], variant_text: str) -> dict:
-    """Minimal scoring stub for textual criticism queries."""
-    alexandrian = {"Aleph", "B", "P75", "P46", "P66"}
-    byzantine = {"A", "K", "W", "Byz"}
+    alexandrian_witnesses = {"Aleph", "B", "P75", "P46", "P66"}
+    byzantine_witnesses = {"A", "K", "W", "Byz"}
 
     weight = 0.0
     affinity_counts = {"Alexandrian": 0, "Byzantine": 0, "Western": 0}
 
     for witness in witnesses:
-        if witness in alexandrian:
+        if witness in alexandrian_witnesses:
             weight += 0.9
             affinity_counts["Alexandrian"] += 1
-        elif witness in byzantine:
+        elif witness in byzantine_witnesses:
             weight += 0.4
             affinity_counts["Byzantine"] += 1
         else:
