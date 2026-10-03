@@ -86,7 +86,7 @@ describe('dependency-injected historical curator', () => {
       relational,
       curator: {
         async curate() {
-          return { summary: '<script>untrusted</script>', provenance: event.provenance, completeness: 'incomplete' }
+          return { summary: 'Summary lacks the required prefix.', provenance: event.provenance, completeness: 'incomplete' }
         },
       },
       governanceLedger,
@@ -94,9 +94,52 @@ describe('dependency-injected historical curator', () => {
       systemPrompt: 'Do not fabricate.',
     })
 
-    await expect(catalog.emit(event)).rejects.toThrow('plain text')
+    await expect(catalog.emit(event)).rejects.toThrow('record incomplete')
     expect(relational.deployed).toHaveLength(0)
     expect(governanceLedger.records[0].event).toBe('CURATION_REJECTED')
+    runtime.stop()
+  })
+
+  it('rejects excessive provenance in events and curator output', async () => {
+    const many = Array.from({ length: 51 }, (_, i) => `archive:${i}`)
+    expect(() => sanitize({ ...event, provenance: many })).toThrow('too many provenance')
+
+    const catalog = mockCatalog()
+    const relational = mockRelational()
+    const governanceLedger = mockGovernanceLedger()
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational,
+      curator: {
+        async curate() {
+          return { summary: 'ok', provenance: many, completeness: 'complete' }
+        },
+      },
+      governanceLedger,
+      stewardId: 'steward-1',
+      systemPrompt: 'Do not fabricate.',
+    })
+    await expect(catalog.emit(event)).rejects.toThrow('too many provenance')
+    runtime.stop()
+  })
+
+  it('does not deploy when the governance record cannot be written', async () => {
+    const catalog = mockCatalog()
+    const relational = mockRelational()
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational,
+      curator: mockCurator(),
+      governanceLedger: {
+        async append() {
+          throw new Error('ledger unavailable')
+        },
+      },
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+    await expect(catalog.emit(event)).rejects.toThrow('ledger unavailable')
+    expect(relational.deployed).toHaveLength(0)
     runtime.stop()
   })
 })
