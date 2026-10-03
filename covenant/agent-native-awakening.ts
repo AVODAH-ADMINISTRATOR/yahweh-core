@@ -71,6 +71,10 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
     throw new Error('Curator output must include provenance')
   }
 
+  if (draft.provenance.length > event.provenance.length) {
+    throw new Error('Curator output contains too many provenance references')
+  }
+
   const allowedProvenance = new Set(event.provenance)
   const provenance = draft.provenance.map((source) => {
     if (typeof source !== 'string' || !allowedProvenance.has(source)) {
@@ -101,21 +105,31 @@ export async function awakenAgentNativeCore(dependencies: AwakeningDependencies)
 
   const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
     let historicalEventId = 'unavailable'
-    let result: GovernanceRecord['event'] = 'CURATION_REJECTED'
-    try {
-      const event = sanitize(rawEvent)
-      historicalEventId = event.id
-      const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
-      const component = curateDataOnly(event, draft)
-      await dependencies.relational.deployComponent(component)
-      result = 'CURATION_DEPLOYED'
-    } finally {
+    const record = async (event: GovernanceRecord['event']) => {
       await dependencies.governanceLedger.append({
-        event: result,
+        event,
         stewardId,
         historicalEventId,
         timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
       })
+    }
+    let component: CuratedComponent
+    try {
+      const event = sanitize(rawEvent)
+      historicalEventId = event.id
+      const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
+      component = curateDataOnly(event, draft)
+    } catch (error) {
+      await record('CURATION_REJECTED')
+      throw error
+    }
+    // Governance must be durably recorded before anything is deployed.
+    await record('CURATION_DEPLOYED')
+    try {
+      await dependencies.relational.deployComponent(component)
+    } catch (error) {
+      await record('CURATION_REJECTED')
+      throw error
     }
   })
 
