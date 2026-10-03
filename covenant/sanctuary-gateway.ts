@@ -44,8 +44,11 @@ export function sanitize(input: unknown): HistoricalEvent {
   }
 
   const record = input as Record<string, unknown>
-  if (!Array.isArray(record.provenance) || record.provenance.length === 0 || record.provenance.length > MAX_PROVENANCE_REFERENCES) {
+  if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
     throw new Error('Invalid historical event: provenance is required')
+  }
+  if (record.provenance.length > MAX_PROVENANCE_REFERENCES) {
+    throw new Error(`Invalid historical event: provenance exceeds ${MAX_PROVENANCE_REFERENCES} references`)
   }
 
   return {

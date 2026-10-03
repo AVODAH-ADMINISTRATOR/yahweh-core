@@ -36,8 +36,11 @@ function sanitize(input) {
         throw new Error('Invalid historical event: expected an object');
     }
     const record = input;
-    if (!Array.isArray(record.provenance) || record.provenance.length === 0 || record.provenance.length > exports.MAX_PROVENANCE_REFERENCES) {
+    if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
         throw new Error('Invalid historical event: provenance is required');
+    }
+    if (record.provenance.length > exports.MAX_PROVENANCE_REFERENCES) {
+        throw new Error(`Invalid historical event: provenance exceeds ${exports.MAX_PROVENANCE_REFERENCES} references`);
     }
     return {
         id: cleanText(record.id, 'id', FIELD_LIMITS.id),

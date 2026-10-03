@@ -100,7 +100,7 @@ def test_treasury_approval_records_two_distinct_hashed_witnesses():
 
 
 def test_sealing_is_append_only_and_compensation_requires_two_witnesses():
-    from council_os.ledger import DualControlApproval
+    from council_os.ledger import DualControlApproval, sha256_hex
 
     ledger = LifecycleLedger()
     original = ledger.append(KernelDomain.LEDGER, "ORIGINAL", {"value": "one"})
@@ -133,7 +133,13 @@ def test_sealing_is_append_only_and_compensation_requires_two_witnesses():
         approval,
     )
     assert compensation.event == "COMPENSATION"
-    assert compensation.payload_hash != ""
+    assert compensation.payload_hash == sha256_hex(json.dumps({
+        "compensates": original.index,
+        "compensates_entry_id": original.entry_id,
+        "witness_a_hash": sha256_hex("witness-a"),
+        "witness_b_hash": sha256_hex("witness-b"),
+        "reason_hash": sha256_hex("correction"),
+    }, sort_keys=True, default=str))
     assert ledger.verify_chain()
 
 

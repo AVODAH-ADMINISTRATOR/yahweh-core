@@ -53,7 +53,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 | --- | --- | --- | --- |
 | 1 | Infusion OctaCore S26 | 1–8 | Core staged; seal approval pending; Sabbath lock Friday 18:00–Saturday 18:00 CHI. |
 | 2 | MIT Grade Gathering | 9–16 | Primary sources and provenance. |
-| 3 | Market Higher Function | 17–24 | 12 Cloudflare services and 28 Workers Al models. |
+| 3 | Market Higher Function | 17–24 | 12 Cloudflare services and 28 Workers AI models. |
 | 4 | Canonical Definition 8×4=32 | 25–32 | Canonical definition. |
 | 5 | 100 Steps + 100 Roadmap | 33–40 | 100 Steps and 100 Roadmap. |
 | 6 | Factory Engines ON | 41–48 | 15 integrations and 8 workstations; GitHub OS Backend is proposed as the sole provider for Cloudflare, pending approval. |

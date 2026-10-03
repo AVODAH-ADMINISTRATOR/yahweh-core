@@ -105,7 +105,7 @@ describe('dependency-injected historical curator', () => {
   })
 
   it('bounds gateway and curator provenance reference counts', async () => {
-    expect(() => sanitize({ ...event, provenance: Array(101).fill(event.provenance[0]) })).toThrow('provenance is required')
+    expect(() => sanitize({ ...event, provenance: Array(101).fill(event.provenance[0]) })).toThrow('exceeds 100 references')
 
     const catalog = mockCatalog()
     const relational = mockRelational()
