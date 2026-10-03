@@ -28,14 +28,14 @@ export interface CuratorAgent {
 }
 
 export interface GovernanceRecord {
-  event: 'CURATION_DEPLOYED' | 'CURATION_REJECTED'
+  event: 'CURATION_APPROVED' | 'CURATION_DEPLOYED' | 'CURATION_REJECTED'
   stewardId: string
   historicalEventId: string
   timestamp: string
 }
 
 export interface GovernanceLedger {
-  append(record: GovernanceRecord): Promise<void> | void
+  append(record: GovernanceRecord): Promise<void>
 }
 
 export interface AwakeningDependencies {
@@ -48,6 +48,16 @@ export interface AwakeningDependencies {
   tableName?: string
   now?: () => Date
 }
+
+const MAX_PROVENANCE_REFERENCES = 100
+const MAX_PROVENANCE_REFERENCE_LENGTH = 1000
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/
+const TABLE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/
+const GOVERNANCE_EVENTS = new Set<GovernanceRecord['event']>([
+  'CURATION_APPROVED',
+  'CURATION_DEPLOYED',
+  'CURATION_REJECTED',
+])
 
 function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedComponent {
   if (draft === null || typeof draft !== 'object' || typeof draft.summary !== 'string') {
@@ -70,10 +80,13 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
   if (!Array.isArray(draft.provenance) || draft.provenance.length === 0) {
     throw new Error('Curator output must include provenance')
   }
+  if (draft.provenance.length > MAX_PROVENANCE_REFERENCES) {
+    throw new Error('Curator output has too many provenance references')
+  }
 
   const allowedProvenance = new Set(event.provenance)
   const provenance = draft.provenance.map((source) => {
-    if (typeof source !== 'string' || !allowedProvenance.has(source)) {
+    if (typeof source !== 'string' || source.length > MAX_PROVENANCE_REFERENCE_LENGTH || !allowedProvenance.has(source)) {
       throw new Error('Curator output contains unsupported provenance')
     }
     return source
@@ -92,12 +105,28 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
 
 export async function awakenAgentNativeCore(dependencies: AwakeningDependencies): Promise<{ status: 'READY'; stop: () => void }> {
   const stewardId = dependencies.stewardId.trim()
-  if (!stewardId || !dependencies.systemPrompt.trim()) {
-    throw new Error('A steward identity and curator system prompt are required')
+  if (!IDENTIFIER_PATTERN.test(stewardId) || !dependencies.systemPrompt.trim()) {
+    throw new Error('A valid steward identity and curator system prompt are required')
   }
 
-  await dependencies.catalog.mount(dependencies.tableName ?? 'eon_generational_records')
+  const tableName = dependencies.tableName ?? 'eon_generational_records'
+  if (!TABLE_NAME_PATTERN.test(tableName)) {
+    throw new Error('A valid catalog table name is required')
+  }
+
+  await dependencies.catalog.mount(tableName)
   await dependencies.relational.initialize()
+
+  let ledgerWrites = Promise.resolve()
+  const appendGovernanceRecord = (record: GovernanceRecord): Promise<void> => {
+    if (!GOVERNANCE_EVENTS.has(record.event) || !IDENTIFIER_PATTERN.test(record.stewardId) ||
+        !IDENTIFIER_PATTERN.test(record.historicalEventId) || Number.isNaN(Date.parse(record.timestamp))) {
+      return Promise.reject(new Error('Invalid sealed governance record'))
+    }
+    const write = ledgerWrites.then(() => dependencies.governanceLedger.append(record))
+    ledgerWrites = write.catch(() => undefined)
+    return write
+  }
 
   const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
     let historicalEventId = 'unavailable'
@@ -107,10 +136,16 @@ export async function awakenAgentNativeCore(dependencies: AwakeningDependencies)
       historicalEventId = event.id
       const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
       const component = curateDataOnly(event, draft)
+      await appendGovernanceRecord({
+        event: 'CURATION_APPROVED',
+        stewardId,
+        historicalEventId,
+        timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+      })
       await dependencies.relational.deployComponent(component)
       result = 'CURATION_DEPLOYED'
     } finally {
-      await dependencies.governanceLedger.append({
+      await appendGovernanceRecord({
         event: result,
         stewardId,
         historicalEventId,

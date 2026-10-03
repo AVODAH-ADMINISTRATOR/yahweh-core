@@ -8,6 +8,8 @@ const FIELD_LIMITS = {
     summary: 5000,
     provenance: 1000,
 };
+const MAX_PROVENANCE_REFERENCES = 100;
+const TARGET_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/;
 function cleanText(value, field, maxLength) {
     if (typeof value !== 'string') {
         throw new Error(`Invalid historical event: ${field} must be text`);
@@ -36,8 +38,15 @@ function sanitize(input) {
     if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
         throw new Error('Invalid historical event: provenance is required');
     }
+    if (record.provenance.length > MAX_PROVENANCE_REFERENCES) {
+        throw new Error('Invalid historical event: too many provenance references');
+    }
+    const id = cleanText(record.id, 'id', FIELD_LIMITS.id);
+    if (!TARGET_ID_PATTERN.test(id)) {
+        throw new Error('Invalid historical event: id must be a valid target identifier');
+    }
     return {
-        id: cleanText(record.id, 'id', FIELD_LIMITS.id),
+        id,
         title: cleanText(record.title, 'title', FIELD_LIMITS.title),
         date: cleanText(record.date, 'date', FIELD_LIMITS.date),
         summary: cleanSummary(record.summary),
