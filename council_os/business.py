@@ -15,6 +15,7 @@ from council_os.domains import CHARTER_CITATIONS, KernelDomain
 from council_os.hitl import Proposal, ScholarSignoff
 from council_os.kernel import CouncilOSKernel
 from council_os.ledger import DualControlApproval, sha256_hex
+from council_os.manifests import validate_identifier
 from council_os.stewardship_policy import check_action_policy, sanitize_text
 
 BOARD_ROLES: FrozenSet[str] = frozenset({"operator", "scholar", "treasurer", "steward"})
@@ -89,6 +90,7 @@ class BusinessGovernance:
         if kind not in MOTION_KINDS:
             raise CharterViolation(f"unknown motion kind {kind}")
         actor_id = sanitize_text(actor_id, field="actor_id", max_length=256)
+        validate_identifier(actor_id)
         title = sanitize_text(title, field="title")
         check_action_policy(kind, title)
         lowered = title.lower()
