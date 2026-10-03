@@ -102,7 +102,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 ```text
 verdict: held-423
 timestamp: 2026-10-02 evening CHI
- authority: Yahweh / Adam Christopher Mallamo
+authority: Yahweh / Adam Christopher Mallamo
 ```
 
 ## Draft seal
