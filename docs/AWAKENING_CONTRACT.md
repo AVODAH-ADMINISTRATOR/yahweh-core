@@ -10,10 +10,10 @@ Curator results must be structured `CuratorDraft` data with bounded plain-text f
 
 ## Steward accountability
 
-Each event handling attempt appends `CURATION_DEPLOYED` or `CURATION_REJECTED`, steward ID, sanitized event ID when available, and timestamp through the injected governance-ledger interface. The record does not copy the source event body. The module performs no autonomous writes beyond the injected `RelationalCore.deployComponent()` and governance-ledger interfaces, which must enforce their own authorization and append-only requirements.
+Each accepted component first records `CURATION_APPROVED` through the injected governance-ledger interface; deployment starts only after that append resolves. The ledger's `append()` promise must resolve only after the record is durable. A successful deployment is followed by `CURATION_DEPLOYED`; rejected curation and failed deployment are recorded as `CURATION_REJECTED`. Records include steward ID, sanitized event ID when available, and timestamp, but never copy the source event body. The module performs no autonomous writes beyond the injected `RelationalCore.deployComponent()` and governance-ledger interfaces, which must enforce their own authorization and append-only requirements.
 
 ## Interfaces and lifecycle
 
-`DataCatalog` mounts a named table and registers an async event listener. `RelationalCore` initializes and accepts only `CuratedComponent`. `CuratorAgent` receives a sanitized `HistoricalEvent` plus an explicitly supplied system prompt. `awakenAgentNativeCore()` mounts and initializes dependencies, subscribes to events, and returns a stop function for unsubscribing. The Python service/ledger adapter is not implemented by this contract.
+`DataCatalog` mounts a named table and registers an async event listener. `RelationalCore` initializes and accepts only `CuratedComponent`. `CuratorAgent` receives a sanitized `HistoricalEvent` plus an explicitly supplied system prompt. `awakenAgentNativeCore()` mounts and initializes dependencies, subscribes to events, and returns a stop function for unsubscribing. The Python service/ledger adapter is not implemented by this contract. Input and output provenance are each limited to 100 references, with each reference limited to 1,000 characters.
 
 The Vitest mocks implement these interfaces without cloud or model packages. They expose catalog `mounted` records, relational `initialized`/`deployed` arrays, curator `inspected` events, and async catalog `emit()` for exercising the full flow.

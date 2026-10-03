@@ -1,12 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sanitize = sanitize;
+exports.MAX_PROVENANCE_REFERENCES = exports.MAX_PROVENANCE_REFERENCE_LENGTH = void 0;
+exports.MAX_PROVENANCE_REFERENCES = 100;
+exports.MAX_PROVENANCE_REFERENCE_LENGTH = 1000;
 const FIELD_LIMITS = {
     id: 256,
     title: 240,
     date: 100,
     summary: 5000,
-    provenance: 1000,
+    provenance: exports.MAX_PROVENANCE_REFERENCE_LENGTH,
 };
 function cleanText(value, field, maxLength) {
     if (typeof value !== 'string') {
@@ -33,7 +36,7 @@ function sanitize(input) {
         throw new Error('Invalid historical event: expected an object');
     }
     const record = input;
-    if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
+    if (!Array.isArray(record.provenance) || record.provenance.length === 0 || record.provenance.length > exports.MAX_PROVENANCE_REFERENCES) {
         throw new Error('Invalid historical event: provenance is required');
     }
     return {

@@ -114,11 +114,23 @@ def test_sealing_is_append_only_and_compensation_requires_two_witnesses():
     seal = ledger.seal(original.index)
     assert seal.event == f"LEDGER_ENTRY_SEALED:{original.index}:{original.entry_id}"
     assert ledger.is_sealed(original.index)
+    assert not ledger.is_sealed(seal.index)
+    with pytest.raises(CharterViolation, match="cannot seal a ledger seal marker"):
+        ledger.seal(seal.index)
+    approval = DualControlApproval("witness-a", "witness-b", "correction")
+    with pytest.raises(CharterViolation, match="target does not match"):
+        ledger.compensate_sealed(
+            original.index,
+            KernelDomain.LEDGER,
+            "COMPENSATION",
+            approval,
+            {"compensates_entry_id": "wrong-id"},
+        )
     compensation = ledger.compensate_sealed(
         original.index,
         KernelDomain.LEDGER,
         "COMPENSATION",
-        DualControlApproval("witness-a", "witness-b", "correction"),
+        approval,
     )
     assert compensation.event == "COMPENSATION"
     assert compensation.payload_hash != ""

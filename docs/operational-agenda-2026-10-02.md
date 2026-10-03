@@ -20,7 +20,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 6. Gate-seal example
 7. Verifier
 8. Schema
-9. Al action history
+9. AI action history
 
 ### Foundation, tasks, and phases
 
@@ -51,12 +51,12 @@ In plain terms, nine separate research artifacts were consolidated into one work
 
 | # | Phase | Task range | Description |
 | --- | --- | --- | --- |
-| 1 | Infusion OctaCore S26 | 1–8 | Core sealed; Sabbath lock Friday 18:00–Saturday 18:00 CHI. |
+| 1 | Infusion OctaCore S26 | 1–8 | Core staged; seal approval pending; Sabbath lock Friday 18:00–Saturday 18:00 CHI. |
 | 2 | MIT Grade Gathering | 9–16 | Primary sources and provenance. |
 | 3 | Market Higher Function | 17–24 | 12 Cloudflare services and 28 Workers Al models. |
 | 4 | Canonical Definition 8×4=32 | 25–32 | Canonical definition. |
 | 5 | 100 Steps + 100 Roadmap | 33–40 | 100 Steps and 100 Roadmap. |
-| 6 | Factory Engines ON | 41–48 | 15 integrations and 8 workstations; GitHub OS Backend is the sole provider for Cloudflare. |
+| 6 | Factory Engines ON | 41–48 | 15 integrations and 8 workstations; GitHub OS Backend is proposed as the sole provider for Cloudflare, pending approval. |
 | 7 | 8×8=64 Crossbreeds | 49–56 | 8×8 crossbreeds. |
 
 ## Gates 1–9 — final list
@@ -93,7 +93,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 ## Open decisions and approvals needed
 
 - [ ] Approve Gate 7's final position (`security-audit`, NEW — audits 6/6).
-- [ ] Approve OS Backend Engine as the sole provider.
+- [ ] Decide whether to approve OS Backend Engine as the sole provider (proposal).
 - [ ] Provide the foundation folder path to populate the 36-file hash manifest (FB links expire).
 - [ ] Approve the sealed summary for post-Sabbath execution.
 
@@ -127,7 +127,7 @@ This section records the later sequence-verification submission as received. Its
 9. daily-brief
 ```
 
-The submission places `security-audit` after all six preceding substantive gates and before `held-queue`, and claims it audits all six. Gate 7 remains the stated position; Gate 3 is not substituted absent explicit confirmation. The submission describes the Sabbath state as **HELD-423**, security sequence only: staged, not executed; no structural code changes, deploy, verification, or run. It says five items are staged in `persuasions.jsonl` as `kind=persuasion`, `status=proposal`.
+The submission places `security-audit` after all six preceding substantive gates and before `held-queue`, and claims it audits all six. Gate 7 remains the stated position; Gate 3 is not substituted absent explicit confirmation. The submission describes its Sabbath state as **HELD-423**, security sequence only: staged, not executed; it reports no structural code changes, deploy, verification, or run in that sequence. This is a source-reported claim about the submission, not the repository's change scope: this repository also contains curator, stewardship, ledger, and audit runtime code and tests. The submission says five items are staged in `persuasions.jsonl` as `kind=persuasion`, `status=proposal`.
 
 ### Nine staged artifact claims
 
@@ -155,7 +155,7 @@ The submission attributes these planned code consolidations to `persuasions.json
 | 259–279 | Duplicate | Replace with an attestation single global check-context lookup. |
 | 184–214 | Local state interceptors | Replace with streamlined hook tracking. |
 
-**Repository check:** the available file at `/home/runner/work/yahweh-core/yahweh-core/frontend/src/App.tsx` is 43 lines long, so the reported line ranges do not match that file. `persuasions.json`, `persuasions.jsonl`, `gate-seal-schema.json`, and `verify_gate_seal.py` were not found in the repository. No code changes have been made for these proposals.
+**Repository check:** `frontend/src/App.tsx` is 43 lines long, so the reported line ranges do not match that file. `persuasions.json`, `persuasions.jsonl`, `gate-seal-schema.json`, and `verify_gate_seal.py` were not found in the repository. The proposed consolidations are separate from the curator, stewardship, ledger, and audit changes described elsewhere in this repository.
 
 ### Provenance and confidence metrics
 

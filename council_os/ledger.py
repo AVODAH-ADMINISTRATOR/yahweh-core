@@ -150,13 +150,17 @@ class LifecycleLedger:
     ) -> LedgerEntry:
         with self._lock:
             safe = redact_payload(payload or {})
-            if sealed:
+            if event.startswith("LEDGER_ENTRY_SEALED:"):
+                sealed_index = safe.get("sealed_index")
                 marker = next(
-                    (entry for entry in self._entries if entry.index == safe.get("sealed_index")),
+                    (entry for entry in self._entries if entry.index == sealed_index),
                     None,
                 )
                 if (
-                    marker is None
+                    not sealed
+                    or type(sealed_index) is not int
+                    or marker is None
+                    or marker.event.startswith("LEDGER_ENTRY_SEALED:")
                     or event != f"LEDGER_ENTRY_SEALED:{marker.index}:{marker.entry_id}"
                     or safe != {"sealed_index": marker.index, "sealed_entry_id": marker.entry_id}
                     or domain.value != marker.domain
@@ -194,11 +198,13 @@ class LifecycleLedger:
 
     def seal(self, index: int) -> LedgerEntry:
         with self._lock:
-            if index < 0 or index >= len(self._entries):
+            if not isinstance(index, int) or isinstance(index, bool) or index < 0 or index >= len(self._entries):
                 raise CharterViolation("unknown ledger entry")
             if self.is_sealed(index):
                 raise CharterViolation("ledger entry already sealed")
             target = self._entries[index]
+            if target.event.startswith("LEDGER_ENTRY_SEALED:"):
+                raise CharterViolation("cannot seal a ledger seal marker")
             return self.append(
                 KernelDomain(target.domain),
                 f"LEDGER_ENTRY_SEALED:{index}:{target.entry_id}",
@@ -208,7 +214,7 @@ class LifecycleLedger:
 
     def is_sealed(self, index: int) -> bool:
         with self._lock:
-            if index < 0 or index >= len(self._entries):
+            if not isinstance(index, int) or isinstance(index, bool) or index < 0 or index >= len(self._entries):
                 return False
             target = self._entries[index]
             expected_payload_hash = sha256_hex(json.dumps(
@@ -216,7 +222,7 @@ class LifecycleLedger:
                 sort_keys=True,
                 default=str,
             ))
-            return any(
+            return (target.sealed and not target.event.startswith("LEDGER_ENTRY_SEALED:")) or any(
                 marker.sealed
                 and marker.index > index
                 and marker.domain == target.domain
@@ -238,9 +244,14 @@ class LifecycleLedger:
     ) -> LedgerEntry:
         with self._lock:
             approval.validate()
-            if index < 0 or index >= len(self._entries) or not self.is_sealed(index):
+            if not isinstance(index, int) or isinstance(index, bool) or index < 0 or index >= len(self._entries) or not self.is_sealed(index):
                 raise CharterViolation("compensation requires a sealed source entry")
             target = self._entries[index]
+            if payload is not None and (
+                ("compensates" in payload and payload["compensates"] != index)
+                or ("compensates_entry_id" in payload and payload["compensates_entry_id"] != target.entry_id)
+            ):
+                raise CharterViolation("compensation target does not match sealed source")
             return self.append(
                 domain,
                 event,
