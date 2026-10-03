@@ -145,6 +145,7 @@ describe('dependency-injected historical curator', () => {
           maximumActiveWrites = Math.max(maximumActiveWrites, activeWrites)
           actions.push(`ledger:${record.event}:${record.historicalEventId}`)
           await new Promise((resolve) => setTimeout(resolve, 5))
+          actions.push(`ledger-durable:${record.event}:${record.historicalEventId}`)
           activeWrites -= 1
         },
       },
@@ -158,8 +159,34 @@ describe('dependency-injected historical curator', () => {
     ])
 
     expect(maximumActiveWrites).toBe(1)
-    expect(actions.indexOf(`ledger:CURATION_APPROVED:${event.id}`)).toBeLessThan(actions.indexOf(`deploy:${event.id}`))
-    expect(actions.indexOf('ledger:CURATION_APPROVED:founders-day-1963')).toBeLessThan(actions.indexOf('deploy:founders-day-1963'))
+    expect(actions.indexOf(`ledger-durable:CURATION_APPROVED:${event.id}`)).toBeLessThan(actions.indexOf(`deploy:${event.id}`))
+    expect(actions.indexOf('ledger-durable:CURATION_APPROVED:founders-day-1963')).toBeLessThan(actions.indexOf('deploy:founders-day-1963'))
+    runtime.stop()
+  })
+
+  it('does not deploy when approval cannot be durably recorded', async () => {
+    const catalog = mockCatalog()
+    const deployed: unknown[] = []
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational: {
+        async initialize() {},
+        async deployComponent(component) {
+          deployed.push(component)
+        },
+      },
+      curator: mockCurator(),
+      governanceLedger: {
+        async append(record) {
+          if (record.event === 'CURATION_APPROVED') throw new Error('ledger unavailable')
+        },
+      },
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+
+    await expect(catalog.emit(event)).rejects.toThrow('ledger unavailable')
+    expect(deployed).toHaveLength(0)
     runtime.stop()
   })
 
