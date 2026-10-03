@@ -9,6 +9,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -101,3 +103,44 @@ class ManifestRegistry:
             },
         )
         return manifest
+
+
+SEALED_MARKER_PATTERN = re.compile(r"[a-f0-9]{64}")
+IDENTIFIER_MAX_LENGTH = 256
+IDENTIFIER_MIN_LENGTH = 1
+IDENTIFIER_ALLOWED_CHARS = re.compile(r"[a-zA-Z0-9_\-.]+")
+
+
+class SealValidationError(ValueError):
+    """Raised when seal validation fails."""
+
+
+def validate_sealed_marker(marker: Any) -> None:
+    if not isinstance(marker, str):
+        raise SealValidationError(f"Sealed marker must be string, got {type(marker).__name__}")
+    if not SEALED_MARKER_PATTERN.fullmatch(marker):
+        raise SealValidationError("Sealed marker must be 64 lowercase hex chars (SHA-256)")
+
+
+def validate_identifier(identifier: Any) -> None:
+    if not isinstance(identifier, str):
+        raise SealValidationError(f"Identifier must be string, got {type(identifier).__name__}")
+    if not IDENTIFIER_MIN_LENGTH <= len(identifier) <= IDENTIFIER_MAX_LENGTH:
+        raise SealValidationError(
+            f"Identifier length must be {IDENTIFIER_MIN_LENGTH}-{IDENTIFIER_MAX_LENGTH}, got {len(identifier)}"
+        )
+    if not IDENTIFIER_ALLOWED_CHARS.fullmatch(identifier):
+        raise SealValidationError("Identifier contains invalid characters. Allowed: a-z A-Z 0-9 _ - .")
+
+
+def seal_ledger_record(marker: str, identifier: str, record_data: Dict[str, Any]) -> Dict[str, Any]:
+    validate_sealed_marker(marker)
+    validate_identifier(identifier)
+    payload = f"{marker}:{identifier}:{json.dumps(record_data, sort_keys=True)}"
+    return {
+        "marker": marker,
+        "identifier": identifier,
+        "sealed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "data": record_data,
+        "integrity_hash": sha256_hex(payload),
+    }
