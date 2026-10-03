@@ -185,6 +185,32 @@ describe('dependency-injected historical curator', () => {
     runtime.stop()
   })
 
+  it('accepts an incomplete summary with the required prefix', async () => {
+    const catalog = mockCatalog()
+    const relational = mockRelational()
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational,
+      curator: {
+        async curate() {
+          return {
+            summary: 'record incomplete: source details are missing',
+            provenance: event.provenance,
+            completeness: 'incomplete',
+          }
+        },
+      },
+      governanceLedger: mockGovernanceLedger(),
+      stewardId: 'steward-1',
+      systemPrompt: 'Do not fabricate.',
+    })
+
+    await catalog.emit(event)
+
+    expect(relational.deployed[0]?.completeness).toBe('incomplete')
+    runtime.stop()
+  })
+
   it('requires explicit incomplete wording when curator marks a record incomplete', async () => {
     const catalog = mockCatalog()
     const relational = mockRelational()
