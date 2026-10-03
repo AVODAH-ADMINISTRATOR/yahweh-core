@@ -122,8 +122,8 @@ def test_sealed_ledger_requires_dual_control_and_redacts_pii():
         KernelDomain.LEDGER,
         "SEAL_TEST",
         {"password": "hunter2", "note": "ok"},
-        sealed=True,
     )
+    kernel.ledger.seal(entry.index)
     with pytest.raises(CharterViolation):
         kernel.ledger.rewrite(entry.index, {"note": "tamper"})
     with pytest.raises(CharterViolation):
