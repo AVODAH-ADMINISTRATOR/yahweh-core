@@ -1,4 +1,4 @@
-import { sanitize, type HistoricalEvent } from './sanctuary-gateway'
+import { MAX_PROVENANCE_ENTRIES, sanitize, type HistoricalEvent } from './sanctuary-gateway'
 
 export interface CuratorDraft {
   summary: string
@@ -70,6 +70,9 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
   if (!Array.isArray(draft.provenance) || draft.provenance.length === 0) {
     throw new Error('Curator output must include provenance')
   }
+  if (draft.provenance.length > MAX_PROVENANCE_ENTRIES) {
+    throw new Error('Curator output includes too many provenance entries')
+  }
 
   const allowedProvenance = new Set(event.provenance)
   const provenance = draft.provenance.map((source) => {
@@ -101,21 +104,27 @@ export async function awakenAgentNativeCore(dependencies: AwakeningDependencies)
 
   const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
     let historicalEventId = 'unavailable'
-    let result: GovernanceRecord['event'] = 'CURATION_REJECTED'
-    try {
-      const event = sanitize(rawEvent)
-      historicalEventId = event.id
-      const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
-      const component = curateDataOnly(event, draft)
-      await dependencies.relational.deployComponent(component)
-      result = 'CURATION_DEPLOYED'
-    } finally {
+    let rejected = true
+    const record = async (result: GovernanceRecord['event']) => {
       await dependencies.governanceLedger.append({
         event: result,
         stewardId,
         historicalEventId,
         timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
       })
+    }
+    try {
+      const event = sanitize(rawEvent)
+      historicalEventId = event.id
+      const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
+      const component = curateDataOnly(event, draft)
+      rejected = false
+      await record('CURATION_DEPLOYED')
+      rejected = true
+      await dependencies.relational.deployComponent(component)
+      rejected = false
+    } finally {
+      if (rejected) await record('CURATION_REJECTED')
     }
   })
 

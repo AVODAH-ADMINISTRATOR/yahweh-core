@@ -6,11 +6,11 @@ The historical curator is a dependency-injected, event-driven module; it does no
 
 Every catalog payload is passed through `covenant/sanctuary-gateway.ts`'s `sanitize()` before it reaches `CuratorAgent.curate()`. Sanitization requires a non-empty event ID, title, date, and at least one provenance reference; it applies Unicode normalization and field limits, removes control characters, rejects markup-like text, and returns only the allowlisted `HistoricalEvent` fields. Untrusted extra properties are discarded. Missing provenance rejects the event before curation.
 
-Curator results must be structured `CuratorDraft` data with bounded plain-text fields; markup-like summaries are rejected. Provenance must be non-empty and drawn from the sanitized event's provenance list. If a result is marked incomplete, its summary must begin with **“record incomplete”**. Events without a source summary must be marked incomplete. Deployed `CuratedComponent` objects contain only typed text and provenance fields; render them as escaped text, never as raw HTML or executable markup.
+Curator results must be structured `CuratorDraft` data with bounded plain-text fields; markup-like summaries are rejected. Provenance must be non-empty, capped at 50 entries, and drawn from the sanitized event's provenance list. If a result is marked incomplete, its summary must begin with **“record incomplete”**. Events without a source summary must be marked incomplete. Deployed `CuratedComponent` objects contain only typed text and provenance fields; render them as escaped text, never as raw HTML or executable markup.
 
 ## Steward accountability
 
-Each event handling attempt appends `CURATION_DEPLOYED` or `CURATION_REJECTED`, steward ID, sanitized event ID when available, and timestamp through the injected governance-ledger interface. The record does not copy the source event body. The module performs no autonomous writes beyond the injected `RelationalCore.deployComponent()` and governance-ledger interfaces, which must enforce their own authorization and append-only requirements.
+The governance record is written durably before `deployComponent()` is called; if the ledger append fails, nothing is deployed. Each event handling attempt appends `CURATION_DEPLOYED` (before deployment) or `CURATION_REJECTED` (including a later deployment failure), steward ID, sanitized event ID when available, and timestamp through the injected governance-ledger interface. The record does not copy the source event body. The module performs no autonomous writes beyond the injected `RelationalCore.deployComponent()` and governance-ledger interfaces, which must enforce their own authorization and append-only requirements.
 
 ## Interfaces and lifecycle
 

@@ -14,6 +14,8 @@ const FIELD_LIMITS = {
   provenance: 1000,
 } as const
 
+export const MAX_PROVENANCE_ENTRIES = 50
+
 function cleanText(value: unknown, field: string, maxLength: number): string {
   if (typeof value !== 'string') {
     throw new Error(`Invalid historical event: ${field} must be text`)
@@ -43,6 +45,10 @@ export function sanitize(input: unknown): HistoricalEvent {
   const record = input as Record<string, unknown>
   if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
     throw new Error('Invalid historical event: provenance is required')
+  }
+
+  if (record.provenance.length > MAX_PROVENANCE_ENTRIES) {
+    throw new Error('Invalid historical event: too many provenance entries')
   }
 
   return {
