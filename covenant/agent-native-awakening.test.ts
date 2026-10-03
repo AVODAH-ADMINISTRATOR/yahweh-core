@@ -16,6 +16,11 @@ describe('dependency-injected historical curator', () => {
     expect(() => sanitize({ ...event, title: '<script>not history</script>' })).toThrow('plain text')
   })
 
+  it('bounds catalog provenance references and their size', () => {
+    expect(() => sanitize({ ...event, provenance: Array(101).fill('archive:source') })).toThrow('supported limit')
+    expect(() => sanitize({ ...event, provenance: ['x'.repeat(513)] })).toThrow('too long')
+  })
+
   it('mounts the archive, sanitizes history, and deploys one data-only component', async () => {
     const catalog = mockCatalog()
     const relational = mockRelational()
@@ -47,12 +52,10 @@ describe('dependency-injected historical curator', () => {
       provenance: event.provenance,
       completeness: 'complete',
     })
-    expect(governanceLedger.records).toEqual([{
-      event: 'CURATION_DEPLOYED',
-      stewardId: 'steward-1',
-      historicalEventId: event.id,
-      timestamp: '2026-10-03T00:00:00.000Z',
-    }])
+    expect(governanceLedger.records.map((record) => record.event)).toEqual([
+      'CURATION_APPROVED',
+      'CURATION_DEPLOYED',
+    ])
     runtime.stop()
   })
 
@@ -86,7 +89,7 @@ describe('dependency-injected historical curator', () => {
       relational,
       curator: {
         async curate() {
-          return { summary: '<script>untrusted</script>', provenance: event.provenance, completeness: 'incomplete' }
+          return { summary: 'partial record missing source details', provenance: event.provenance, completeness: 'incomplete' }
         },
       },
       governanceLedger,
@@ -94,9 +97,80 @@ describe('dependency-injected historical curator', () => {
       systemPrompt: 'Do not fabricate.',
     })
 
-    await expect(catalog.emit(event)).rejects.toThrow('plain text')
+    await expect(catalog.emit(event)).rejects.toThrow('record incomplete')
     expect(relational.deployed).toHaveLength(0)
     expect(governanceLedger.records[0].event).toBe('CURATION_REJECTED')
+    runtime.stop()
+  })
+
+  it('bounds curator provenance output', async () => {
+    const catalog = mockCatalog()
+    const relational = mockRelational()
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational,
+      curator: {
+        async curate() {
+          return { summary: event.summary, provenance: Array(101).fill(event.provenance[0]), completeness: 'complete' }
+        },
+      },
+      governanceLedger: mockGovernanceLedger(),
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+
+    await expect(catalog.emit(event)).rejects.toThrow('supported limit')
+    expect(relational.deployed).toHaveLength(0)
+    runtime.stop()
+  })
+
+  it('persists governance approval before deployment', async () => {
+    const catalog = mockCatalog()
+    const deployedAndRecorded: string[] = []
+    const relational = mockRelational()
+    const governanceLedger = {
+      append(record: { event: string }) {
+        deployedAndRecorded.push(`record:${record.event}`)
+      },
+    }
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational: {
+        async initialize() {},
+        async deployComponent(component) {
+          deployedAndRecorded.push('deploy')
+          await relational.deployComponent(component)
+        },
+      },
+      curator: mockCurator(),
+      governanceLedger,
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+
+    await catalog.emit(event)
+    expect(deployedAndRecorded).toEqual(['record:CURATION_APPROVED', 'deploy', 'record:CURATION_DEPLOYED'])
+    runtime.stop()
+  })
+
+  it('does not deploy when durable governance recording fails', async () => {
+    const catalog = mockCatalog()
+    const relational = mockRelational()
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational,
+      curator: mockCurator(),
+      governanceLedger: {
+        append() {
+          throw new Error('governance storage unavailable')
+        },
+      },
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+
+    await expect(catalog.emit(event)).rejects.toThrow('governance storage unavailable')
+    expect(relational.deployed).toHaveLength(0)
     runtime.stop()
   })
 })

@@ -20,7 +20,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 6. Gate-seal example
 7. Verifier
 8. Schema
-9. Al action history
+9. AI action history
 
 ### Foundation, tasks, and phases
 
@@ -38,9 +38,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 
 ### Migration staging
 
-- Bundle staged read-only at `/mnt/data/AVODAH-VSCODE-MIGRATION/`.
-- 9 assets are included.
-- `deploy.sh` is for dry-run only (read-only, no writes).
+- Migration bundle assets and a deploy script are not present in this repository; no external staging path or deployment behavior is asserted here.
 
 ### Ledger schema additions
 
@@ -51,12 +49,12 @@ In plain terms, nine separate research artifacts were consolidated into one work
 
 | # | Phase | Task range | Description |
 | --- | --- | --- | --- |
-| 1 | Infusion OctaCore S26 | 1–8 | Core sealed; Sabbath lock Friday 18:00–Saturday 18:00 CHI. |
+| 1 | Infusion OctaCore S26 | 1–8 | Core remains staged until seal approval; Sabbath lock Friday 18:00–Saturday 18:00 CHI. |
 | 2 | MIT Grade Gathering | 9–16 | Primary sources and provenance. |
-| 3 | Market Higher Function | 17–24 | 12 Cloudflare services and 28 Workers Al models. |
+| 3 | Market Higher Function | 17–24 | 12 Cloudflare services and 28 Workers AI models. |
 | 4 | Canonical Definition 8×4=32 | 25–32 | Canonical definition. |
 | 5 | 100 Steps + 100 Roadmap | 33–40 | 100 Steps and 100 Roadmap. |
-| 6 | Factory Engines ON | 41–48 | 15 integrations and 8 workstations; GitHub OS Backend is the sole provider for Cloudflare. |
+| 6 | Factory Engines ON | 41–48 | 15 integrations and 8 workstations; GitHub OS Backend is a proposed provider for Cloudflare. |
 | 7 | 8×8=64 Crossbreeds | 49–56 | 8×8 crossbreeds. |
 
 ## Gates 1–9 — final list
@@ -83,8 +81,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 
 ## Tomorrow staging checklist
 
-- [ ] Run `deploy.sh` in dry-run mode only; read-only, with no writes.
-- [ ] Verify `MANIFEST.json` SHA256.
+- [ ] If migration assets are added, use their documented dry-run and verify their manifest.
 - [ ] Obtain human sign-off before L3 promotion.
 - [ ] Confirm `VSCODE_MIGRATION_ALL_IN_ONE.zip` is ready.
 - [ ] Confirm terminal `inputrc` and `.bashrc` are configured.
@@ -93,7 +90,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 ## Open decisions and approvals needed
 
 - [ ] Approve Gate 7's final position (`security-audit`, NEW — audits 6/6).
-- [ ] Approve OS Backend Engine as the sole provider.
+- [ ] Decide whether OS Backend Engine should be the sole provider.
 - [ ] Provide the foundation folder path to populate the 36-file hash manifest (FB links expire).
 - [ ] Approve the sealed summary for post-Sabbath execution.
 

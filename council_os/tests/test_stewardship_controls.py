@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -137,3 +138,32 @@ def test_kernel_can_use_a_persistent_jsonl_ledger(tmp_path: Path):
     assert restored.verify_chain()
     assert len(restored) == len(kernel.ledger)
     assert any(entry.event == "KERNEL_BOOT" for entry in restored.entries)
+
+
+def test_persistent_ledger_serializes_concurrent_writers(tmp_path: Path):
+    path = tmp_path / "concurrent-ledger.jsonl"
+    ledgers = [LifecycleLedger(path), LifecycleLedger(path)]
+
+    def append_events(ledger, writer):
+        for number in range(20):
+            ledger.append(KernelDomain.LEDGER, f"{writer}-{number}")
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        list(executor.map(lambda item: append_events(*item), [(ledgers[0], "a"), (ledgers[1], "b")]))
+
+    restored = LifecycleLedger(path)
+    assert len(restored) == 40
+    assert len({entry.entry_id for entry in restored.entries}) == 40
+    assert restored.verify_chain()
+
+
+def test_seal_marker_must_bind_the_target_identifier():
+    ledger = LifecycleLedger()
+    target = ledger.append(KernelDomain.LEDGER, "ORIGINAL")
+    marker = ledger.seal(target.index)
+    marker.payload_hash = LifecycleLedger._seal_marker_payload_hash(target.index, "wrong-target")
+
+    assert not ledger.is_sealed(target.index)
+    assert not ledger.verify_chain()
+    target.entry_id = "wrong-target"
+    assert not ledger.is_sealed(target.index)

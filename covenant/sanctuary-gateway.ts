@@ -11,12 +11,16 @@ const FIELD_LIMITS = {
   title: 240,
   date: 100,
   summary: 5000,
-  provenance: 1000,
+  provenance: 512,
+  provenanceItems: 100,
 } as const
 
 function cleanText(value: unknown, field: string, maxLength: number): string {
   if (typeof value !== 'string') {
     throw new Error(`Invalid historical event: ${field} must be text`)
+  }
+  if (value.length > maxLength) {
+    throw new Error(`Invalid historical event: ${field} is empty or too long`)
   }
   const cleaned = value.normalize('NFKC')
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
@@ -43,6 +47,9 @@ export function sanitize(input: unknown): HistoricalEvent {
   const record = input as Record<string, unknown>
   if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
     throw new Error('Invalid historical event: provenance is required')
+  }
+  if (record.provenance.length > FIELD_LIMITS.provenanceItems) {
+    throw new Error('Invalid historical event: provenance exceeds the supported limit')
   }
 
   return {

@@ -1,5 +1,9 @@
 import { sanitize, type HistoricalEvent } from './sanctuary-gateway'
 
+const MAX_PROVENANCE_ITEMS = 100
+const MAX_PROVENANCE_LENGTH = 512
+const MAX_CURATOR_OUTPUT_BYTES = 10 * 1024 * 1024
+
 export interface CuratorDraft {
   summary: string
   provenance: string[]
@@ -28,7 +32,7 @@ export interface CuratorAgent {
 }
 
 export interface GovernanceRecord {
-  event: 'CURATION_DEPLOYED' | 'CURATION_REJECTED'
+  event: 'CURATION_APPROVED' | 'CURATION_DEPLOYED' | 'CURATION_REJECTED'
   stewardId: string
   historicalEventId: string
   timestamp: string
@@ -56,6 +60,9 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
   if (draft.completeness !== 'complete' && draft.completeness !== 'incomplete') {
     throw new Error('Curator output must declare completeness')
   }
+  if (draft.summary.length > 5000) {
+    throw new Error('Curator output summary must be bounded plain text')
+  }
   const summary = draft.summary.normalize('NFKC')
     .replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim()
   if (!summary || summary.length > 5000 || /<\/?[a-z][^>]*>/i.test(summary)) {
@@ -70,16 +77,22 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
   if (!Array.isArray(draft.provenance) || draft.provenance.length === 0) {
     throw new Error('Curator output must include provenance')
   }
+  if (draft.provenance.length > MAX_PROVENANCE_ITEMS) {
+    throw new Error('Curator output provenance exceeds the supported limit')
+  }
 
   const allowedProvenance = new Set(event.provenance)
   const provenance = draft.provenance.map((source) => {
-    if (typeof source !== 'string' || !allowedProvenance.has(source)) {
+    if (typeof source !== 'string' || source.length > MAX_PROVENANCE_LENGTH) {
+      throw new Error('Curator output provenance exceeds the supported size')
+    }
+    if (!allowedProvenance.has(source)) {
       throw new Error('Curator output contains unsupported provenance')
     }
     return source
   })
 
-  return {
+  const output: CuratedComponent = {
     type: 'HistoricalCard',
     eventId: event.id,
     title: event.title,
@@ -88,6 +101,10 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
     provenance,
     completeness: draft.completeness,
   }
+  if (new TextEncoder().encode(JSON.stringify(output)).byteLength > MAX_CURATOR_OUTPUT_BYTES) {
+    throw new Error('Curator output exceeds the supported size')
+  }
+  return output
 }
 
 export async function awakenAgentNativeCore(dependencies: AwakeningDependencies): Promise<{ status: 'READY'; stop: () => void }> {
@@ -101,21 +118,32 @@ export async function awakenAgentNativeCore(dependencies: AwakeningDependencies)
 
   const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
     let historicalEventId = 'unavailable'
-    let result: GovernanceRecord['event'] = 'CURATION_REJECTED'
     try {
       const event = sanitize(rawEvent)
       historicalEventId = event.id
       const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
       const component = curateDataOnly(event, draft)
-      await dependencies.relational.deployComponent(component)
-      result = 'CURATION_DEPLOYED'
-    } finally {
       await dependencies.governanceLedger.append({
-        event: result,
+        event: 'CURATION_APPROVED',
         stewardId,
         historicalEventId,
         timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
       })
+      await dependencies.relational.deployComponent(component)
+      await dependencies.governanceLedger.append({
+        event: 'CURATION_DEPLOYED',
+        stewardId,
+        historicalEventId,
+        timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+      })
+    } catch (error) {
+      await dependencies.governanceLedger.append({
+        event: 'CURATION_REJECTED',
+        stewardId,
+        historicalEventId,
+        timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+      })
+      throw error
     }
   })
 
