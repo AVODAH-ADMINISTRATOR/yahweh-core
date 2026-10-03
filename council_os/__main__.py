@@ -1,13 +1,17 @@
-"""CLI: python -m council_os [status|compile|health|policy|forge|covenant|library|ethiopic|housing|handset|workspace|cloudflare|schedule|business|compare|produce]."""
+"""CLI: python -m council_os [status|compile|health|policy|audit|forge|covenant|library|ethiopic|housing|handset|workspace|cloudflare|schedule|business|compare|produce]."""
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
+from pathlib import Path
 
+from council_os.constraints import CharterViolation
 from council_os.forge import AutoDeveloperForge
 from council_os.kernel import CouncilOSKernel
-from council_os.policy import main as policy_main
+from council_os.ledger import LifecycleLedger
+from council_os.policy import compile_policy, main as policy_main
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -15,6 +19,56 @@ def main(argv: list[str] | None = None) -> int:
     command = args[0] if args else "status"
     if command == "policy":
         return policy_main(args[1:])
+    if command == "audit":
+        parser = argparse.ArgumentParser(prog="python -m council_os audit")
+        parser.add_argument("--ledger", help="read and verify an existing JSONL ledger")
+        options = parser.parse_args(args[1:])
+        if options.ledger:
+            policy_ok = False
+            try:
+                policy_ok = compile_policy()["status"] == "passed"
+            except CharterViolation:
+                pass
+            try:
+                if not Path(options.ledger).is_file():
+                    raise CharterViolation("JSONL ledger file does not exist")
+                ledger = LifecycleLedger(options.ledger)
+                ledger_ok = ledger.verify_chain()
+                count = len(ledger)
+                head_hash = ledger.head_hash()
+            except (CharterViolation, OSError) as exc:
+                report = {
+                    "status": "failed",
+                    "checks": {"charter_policy": policy_ok, "ledger_chain": False,
+                               "hmac_boot_seal": "not available for imported JSONL ledgers"},
+                    "error": str(exc),
+                }
+                print(json.dumps(report, indent=2))
+                return 1
+            checks = {
+                "charter_policy": policy_ok,
+                "ledger_chain": ledger_ok,
+                "hmac_boot_seal": "not available for imported JSONL ledgers",
+            }
+            report = {
+                "status": "passed" if checks["charter_policy"] and checks["ledger_chain"] else "failed",
+                "checks": checks,
+                "ledger": {
+                    "entries": count,
+                    "head_hash": head_hash,
+                    "record_ids": [
+                        {"id": entry.entry_id, "domain": entry.domain}
+                        for entry in ledger.entries
+                    ],
+                },
+                "record_id_format": "sequence-domain-code-mnemonic-digit-sha256-prefix",
+            }
+        else:
+            kernel = CouncilOSKernel()
+            kernel.compile()
+            report = kernel.audit_report()
+        print(json.dumps(report, indent=2))
+        return 0 if report["status"] == "passed" else 1
     kernel = CouncilOSKernel()
     if command == "compile":
         print(json.dumps(kernel.compile(), indent=2))

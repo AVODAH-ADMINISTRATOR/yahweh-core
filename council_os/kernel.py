@@ -23,13 +23,14 @@ from council_os.jobs import AuthorizedJob, HumanAuthorization, JobScheduler
 from council_os.ledger import DualControlApproval, LifecycleLedger
 from council_os.manifests import HumanApproval, ManifestRegistry, SignedManifest
 from council_os.policy import compile_policy
+from council_os.stewardship_policy import check_action_policy
 
 
 class CouncilOSKernel:
-    def __init__(self, signing_key: bytes | None = None) -> None:
+    def __init__(self, signing_key: bytes | None = None, ledger_path: str | os.PathLike[str] | None = None) -> None:
         self.lock = CharterLock()
         self.lock.assert_intact()
-        self.ledger = LifecycleLedger()
+        self.ledger = LifecycleLedger(ledger_path)
         self.mesh = DomainMesh(self.ledger)
         self.jobs = JobScheduler(self.mesh, self.ledger)
         self.hitl = HITLGate(self.ledger)
@@ -37,15 +38,17 @@ class CouncilOSKernel:
         self.manifests = ManifestRegistry(key, self.ledger)
         self.fidelity = FidelityGate(self.lock, self.ledger)
         self.compiled = False
+        self.boot_payload = {
+            "domains": [d.value for d in KernelDomain],
+            "virtualized": True,
+            "personalized_will": False,
+            "charter_citations": list(CHARTER_CITATIONS),
+        }
+        self.boot_seal = self.manifests.seal_boot(self.boot_payload)
         self.ledger.append(
             KernelDomain.GOVERNANCE,
             "KERNEL_BOOT",
-            {
-                "domains": [d.value for d in KernelDomain],
-                "virtualized": True,
-                "personalized_will": False,
-                "charter_citations": list(CHARTER_CITATIONS),
-            },
+            {**self.boot_payload, "boot_seal": self.boot_seal.__dict__},
         )
 
     def compile(self) -> Dict[str, Any]:
@@ -54,6 +57,34 @@ class CouncilOSKernel:
         self.compiled = True
         self.ledger.append(KernelDomain.GOVERNANCE, "KERNEL_COMPILE", report)
         return report
+
+    def audit_report(self) -> Dict[str, Any]:
+        policy_ok = True
+        try:
+            compile_policy()
+        except CharterViolation:
+            policy_ok = False
+        checks = {
+            "charter_policy": policy_ok,
+            "ledger_chain": self.ledger.verify_chain(),
+            "hmac_boot_seal": self.manifests.verify_boot_seal(self.boot_payload, self.boot_seal),
+        }
+        return {
+            "status": "passed" if all(checks.values()) else "failed",
+            "checks": checks,
+            "ledger": {
+                "entries": len(self.ledger),
+                "head_hash": self.ledger.head_hash(),
+                "record_ids": [
+                    {"id": entry.entry_id, "domain": entry.domain}
+                    for entry in self.ledger.entries
+                ],
+            },
+            "boot_seal": {
+                "body_hash": self.boot_seal.body_hash,
+                "signature": self.boot_seal.signature,
+            },
+        }
 
     def health(self) -> Dict[str, Any]:
         return {
@@ -73,6 +104,7 @@ class CouncilOSKernel:
         runtime = self.mesh.get(domain)
         if runtime.halted:
             raise CharterViolation(f"domain {domain.value} is halted")
+        check_action_policy(name, {"purpose": purpose})
         auth = HumanAuthorization(actor_id=actor_id, purpose=purpose)
         return self.jobs.schedule(
             AuthorizedJob(domain=domain, name=name, authorization=auth)
@@ -97,6 +129,7 @@ class CouncilOSKernel:
         if detect_harm(proposal.payload):
             self.ledger.append(proposal.domain, "REFUSAL_TO_HARM", {"proposal_id": proposal.proposal_id})
             raise CharterViolation("refusal to harm")
+        check_action_policy(proposal.kind, proposal.payload)
         return self.hitl.propose(proposal)
 
     def commit(self, proposal_id: str, signoff: Optional[ScholarSignoff]) -> Proposal:
