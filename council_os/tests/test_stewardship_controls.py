@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -97,6 +98,39 @@ def test_treasury_approval_records_two_distinct_hashed_witnesses():
     assert event.payload_hash
     assert sha256_hex("witness-a") != sha256_hex("witness-b")
     assert kernel.ledger.verify_chain()
+
+
+def test_ledger_appends_are_serialized_across_threads(tmp_path: Path):
+    path = tmp_path / "concurrent-ledger.jsonl"
+    ledger = LifecycleLedger(path)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        entries = list(pool.map(lambda value: ledger.append(KernelDomain.LEDGER, "CONCURRENT", {"value": value}), range(64)))
+
+    assert sorted(entry.index for entry in entries) == list(range(64))
+    assert ledger.verify_chain()
+    assert len(LifecycleLedger(path)) == 64
+
+
+def test_seal_markers_must_bind_to_the_existing_target_id():
+    ledger = LifecycleLedger()
+    original = ledger.append(KernelDomain.LEDGER, "ORIGINAL")
+    ledger.append(
+        KernelDomain.LEDGER,
+        f"LEDGER_ENTRY_SEALED:{original.index}",
+        {"sealed_index": original.index, "sealed_entry_id": "unrelated-target"},
+        sealed=True,
+    )
+
+    assert not ledger.is_sealed(original.index)
+    assert not ledger.verify_chain()
+
+
+def test_malformed_seal_markers_fail_chain_verification():
+    ledger = LifecycleLedger()
+    ledger.append(KernelDomain.LEDGER, "ORIGINAL")
+    ledger.append(KernelDomain.LEDGER, "LEDGER_ENTRY_SEALED:0", sealed=True)
+
+    assert not ledger.verify_chain()
 
 
 def test_sealing_is_append_only_and_compensation_requires_two_witnesses():
