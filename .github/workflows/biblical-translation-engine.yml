@@ -1,0 +1,25 @@
+name: Biblical Translation Engine
+
+on:
+  push:
+    branches: [main, twin]
+  pull_request:
+    branches: [main, twin]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Validate Charter Gate
+        run: python -m council_os policy
+
+      - name: Check kernel health
+        run: python -m council_os status
