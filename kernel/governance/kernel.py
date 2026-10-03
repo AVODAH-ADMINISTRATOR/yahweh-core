@@ -10,6 +10,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from council_os.constraints import CharterLock, CharterViolation, FORBIDDEN_BIND_PATHS
+from council_os.deployment_gates import gate_state_transition
 from council_os.domains import (
     CHARTER_CITATIONS,
     TRANSLATION_GPU_PURPOSE,
@@ -68,6 +69,7 @@ class CouncilOSKernel:
         }
 
     def schedule(self, domain: KernelDomain, name: str, actor_id: str, purpose: str) -> AuthorizedJob:
+        gate_state_transition(self.ledger, "SCHEDULE", domain.value)
         if not self.compiled:
             raise CharterViolation("kernel must compile charter policy before scheduling work")
         runtime = self.mesh.get(domain)
@@ -106,6 +108,7 @@ class CouncilOSKernel:
         return self.manifests.sign(node_role, node_id, domain, body)
 
     def sync_mesh(self, manifest: SignedManifest, approval: Optional[HumanApproval]) -> SignedManifest:
+        gate_state_transition(self.ledger, "SYNC_MESH", getattr(manifest.domain, "value", manifest.domain))
         if not self.compiled:
             raise CharterViolation("kernel must compile charter policy before mesh sync")
         return self.manifests.sync(manifest, approval)
@@ -118,6 +121,7 @@ class CouncilOSKernel:
             raise CharterViolation("NO_MISSION_REWRITE_ENDPOINT")
 
     def gate_release(self) -> Dict[str, Any]:
+        gate_state_transition(self.ledger, "RELEASE", "fidelity")
         return self.fidelity.gate_release()
 
     def domain_change_citations(self, domain: KernelDomain) -> Dict[str, Any]:
