@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -60,6 +61,27 @@ def test_jsonl_ledger_persists_hashed_domain_ids_and_detects_tampering(tmp_path:
         LifecycleLedger(path)
 
 
+def test_persistent_ledger_serializes_writers_and_refreshes_stale_instances(tmp_path: Path):
+    path = tmp_path / "concurrent-ledger.jsonl"
+    ledgers = [LifecycleLedger(path), LifecycleLedger(path)]
+
+    def append_entry(sequence: int):
+        return ledgers[sequence % 2].append(
+            KernelDomain.LEDGER,
+            f"CONCURRENT_{sequence}",
+        )
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        entries = list(executor.map(append_entry, range(32)))
+
+    restored = LifecycleLedger(path)
+    assert len(entries) == 32
+    assert sorted(entry.index for entry in entries) == list(range(32))
+    assert len(restored) == 32
+    assert restored.verify_chain()
+    assert len({entry.entry_hash for entry in restored.entries}) == 32
+
+
 def test_boot_seal_and_audit_report_detect_tampering():
     kernel = CouncilOSKernel(signing_key=b"test signing key")
     kernel.compile()
@@ -99,14 +121,24 @@ def test_treasury_approval_records_two_distinct_hashed_witnesses():
     assert kernel.ledger.verify_chain()
 
 
-def test_sealing_is_append_only_and_compensation_requires_two_witnesses():
+def test_sealing_is_append_only_and_compensation_requires_two_witnesses(tmp_path: Path):
     from council_os.ledger import DualControlApproval
 
-    ledger = LifecycleLedger()
+    ledger = LifecycleLedger(tmp_path / "sealed-ledger.jsonl")
     original = ledger.append(KernelDomain.LEDGER, "ORIGINAL", {"value": "one"})
+    with pytest.raises(CharterViolation, match="seal markers must be created with seal"):
+        ledger.append(KernelDomain.LEDGER, f"LEDGER_ENTRY_SEALED:{original.index}")
+    assert not ledger.is_sealed(original.index)
+
     seal = ledger.seal(original.index)
     assert seal.event == f"LEDGER_ENTRY_SEALED:{original.index}"
+    assert seal.seal_target_index == original.index
+    assert seal.seal_target_id == original.entry_id
     assert ledger.is_sealed(original.index)
+    assert LifecycleLedger(ledger.storage_path).is_sealed(original.index)
+    seal.seal_target_id = "forged-target-id"
+    assert not ledger.is_sealed(original.index)
+    seal.seal_target_id = original.entry_id
     compensation = ledger.compensate_sealed(
         original.index,
         KernelDomain.LEDGER,
