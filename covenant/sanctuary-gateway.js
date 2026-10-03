@@ -7,6 +7,7 @@ const FIELD_LIMITS = {
     date: 100,
     summary: 5000,
     provenance: 1000,
+    provenanceItems: 25,
 };
 function cleanText(value, field, maxLength) {
     if (typeof value !== 'string') {
@@ -35,6 +36,9 @@ function sanitize(input) {
     const record = input;
     if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
         throw new Error('Invalid historical event: provenance is required');
+    }
+    if (record.provenance.length > FIELD_LIMITS.provenanceItems) {
+        throw new Error('Invalid historical event: provenance exceeds the supported limit');
     }
     return {
         id: cleanText(record.id, 'id', FIELD_LIMITS.id),

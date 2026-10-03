@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
 from council_os.kernel import CouncilOSKernel
-from council_os.ledger import LifecycleLedger
+from council_os.ledger import DualControlApproval, LifecycleLedger
 from council_os.manifests import ManifestRegistry
 from council_os.stewardship_policy import check_action_policy, sanitize_text
 
@@ -58,6 +59,41 @@ def test_jsonl_ledger_persists_hashed_domain_ids_and_detects_tampering(tmp_path:
     path.write_text(json.dumps(row) + "\n", encoding="utf-8")
     with pytest.raises(CharterViolation, match="integrity verification failed"):
         LifecycleLedger(path)
+
+
+def test_jsonl_ledger_serializes_concurrent_writes(tmp_path: Path):
+    path = tmp_path / "concurrent-ledger.jsonl"
+    ledger = LifecycleLedger(path)
+
+    with ThreadPoolExecutor(max_workers=8) as workers:
+        entries = list(workers.map(
+            lambda sequence: ledger.append(KernelDomain.LEDGER, f"EVENT_{sequence}"),
+            range(100),
+        ))
+
+    assert sorted(entry.index for entry in entries) == list(range(100))
+    assert ledger.verify_chain()
+    assert len(path.read_text(encoding="utf-8").splitlines()) == 100
+
+
+def test_sealed_marker_must_match_the_target_identifier():
+    ledger = LifecycleLedger()
+    original = ledger.append(KernelDomain.LEDGER, "ORIGINAL")
+    ledger.append(
+        KernelDomain.LEDGER,
+        f"LEDGER_ENTRY_SEALED:{original.index}",
+        {"sealed_index": original.index, "sealed_entry_id": "another-entry"},
+        sealed=True,
+    )
+
+    assert not ledger.is_sealed(original.index)
+    with pytest.raises(CharterViolation, match="compensation requires a sealed source entry"):
+        ledger.compensate_sealed(
+            original.index,
+            KernelDomain.LEDGER,
+            "COMPENSATION",
+            DualControlApproval("witness-a", "witness-b", "correction"),
+        )
 
 
 def test_boot_seal_and_audit_report_detect_tampering():

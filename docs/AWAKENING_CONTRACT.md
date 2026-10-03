@@ -10,7 +10,7 @@ Curator results must be structured `CuratorDraft` data with bounded plain-text f
 
 ## Steward accountability
 
-Each event handling attempt appends `CURATION_DEPLOYED` or `CURATION_REJECTED`, steward ID, sanitized event ID when available, and timestamp through the injected governance-ledger interface. The record does not copy the source event body. The module performs no autonomous writes beyond the injected `RelationalCore.deployComponent()` and governance-ledger interfaces, which must enforce their own authorization and append-only requirements.
+Each validated deployment first awaits a `CURATION_DEPLOYMENT_AUTHORIZED` append before calling `RelationalCore.deployComponent()`, then records `CURATION_DEPLOYED`; rejected attempts record `CURATION_REJECTED`. Each record includes the steward ID, sanitized event ID when available, and timestamp through the injected governance-ledger interface. The record does not copy the source event body. The module performs no autonomous writes beyond the injected `RelationalCore.deployComponent()` and governance-ledger interfaces, which must enforce their own authorization and append-only requirements.
 
 ## Interfaces and lifecycle
 
