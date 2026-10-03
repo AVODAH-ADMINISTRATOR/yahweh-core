@@ -1,89 +1,754 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<style>
-  body { margin:0; display:flex; height:100vh; background:#0a0a0a; color:white; font-family:Segoe UI }
-  #auditorium { flex:2; background:#111 }
-  #studio { flex:1; background:#1a1a1a; padding:20px; border-left:2px solid #333 }
-  .fader { width:100%; margin:10px 0 }
-  button { background:#c9a86a; color:black; border:none; padding:10px 20px; cursor:pointer; margin:5px }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AVODAH Audio Studio</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --panel: #141414;
+      --panel-2: #1a1a1a;
+      --border: #333;
+      --gold: #c9a86a;
+      --gold-dim: #a88a4f;
+      --text: #f5f5f5;
+      --muted: #9a9a9a;
+      --danger: #c44;
+      --ok: #4caf7a;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Inter, system-ui, sans-serif;
+    }
+
+    body {
+      display: flex;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #auditorium {
+      flex: 2 1 0;
+      position: relative;
+      min-width: 0;
+      background: #0d0d0d;
+    }
+
+    #auditorium canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(10, 10, 10, 0.72);
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .badge.live .dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+    .badge.rec .dot { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+    #studio {
+      flex: 1 1 360px;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px;
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border-left: 2px solid var(--border);
+      overflow-y: auto;
+    }
+
+    header.studio-header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+    }
+
+    header.studio-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .section {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button, .file-btn {
+      appearance: none;
+      border: none;
+      border-radius: 8px;
+      background: var(--gold);
+      color: #111;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter 0.15s ease, transform 0.15s ease;
+    }
+
+    button:hover, .file-btn:hover { filter: brightness(1.05); }
+    button:active, .file-btn:active { transform: translateY(1px); }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button.secondary, .file-btn {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+    }
+
+    button.danger {
+      background: transparent;
+      color: #f2b4b4;
+      border: 1px solid var(--danger);
+    }
+
+    button.active {
+      box-shadow: 0 0 0 2px rgba(201, 168, 106, 0.35);
+    }
+
+    label.control {
+      display: grid;
+      gap: 6px;
+      margin: 10px 0;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    label.control span.meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    input[type="range"].fader {
+      width: 100%;
+      accent-color: var(--gold);
+    }
+
+    input[type="file"] { display: none; }
+
+    .meter {
+      height: 10px;
+      border-radius: 999px;
+      background: #222;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-top: 10px;
+    }
+
+    .meter > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--ok), var(--gold), var(--danger));
+      transition: width 0.08s linear;
+    }
+
+    .status-line {
+      min-height: 1.2em;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 10px 0 0;
+    }
+
+    .status-line.ok { color: var(--ok); }
+    .status-line.warn { color: var(--gold); }
+    .status-line.err { color: #f2b4b4; }
+
+    .deck-list {
+      display: grid;
+      gap: 6px;
+      max-height: 140px;
+      overflow: auto;
+      margin-top: 8px;
+    }
+
+    .deck-list button {
+      width: 100%;
+      text-align: left;
+      background: #101010;
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-weight: 500;
+    }
+
+    .deck-list button.active {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    footer.studio-footer {
+      margin-top: auto;
+      padding-top: 8px;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    footer.studio-footer a {
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    @media (max-width: 900px) {
+      body { flex-direction: column; overflow: auto; }
+      #auditorium { min-height: 42vh; flex: none; }
+      #studio { max-width: none; border-left: none; border-top: 2px solid var(--border); }
+    }
+  </style>
 </head>
 <body>
-  <div id="auditorium"></div>
-  <div id="studio">
-    <h2>AVODAH AUDIO STUDIO</h2>
-    <button onclick="playTrack()">▶ Play Sermon Audio</button>
-    <button onclick="recordTrack()">● Record</button>
-    <hr>
-    <label>Main Volume</label><input type="range" class="fader" id="vol" min="-40" max="0">
-    <label>Reverb (Auditorium Feel)</label><input type="range" class="fader" id="reverb" min="0" max="100">
-    <label>Mic 1 - Pastor</label><input type="range" class="fader" min="0" max="100">
-    <label>Mic 2 - Worship</label><input type="range" class="fader" min="0" max="100">
-    <hr>
-    <h3>VISUAL AUDITORIUM</h3>
-    <button onclick="addLight()">+ Add Stage Light</button>
-    <button onclick="addScreen()">+ Add Screen for Deck</button>
-    <button onclick="toggleAudience()">Toggle Audience View</button>
+  <div id="auditorium" aria-label="Visual auditorium">
+    <div class="hud">
+      <div id="liveBadge" class="badge"><span class="dot"></span><span>Idle</span></div>
+      <div id="viewBadge" class="badge"><span class="dot"></span><span>Stage view</span></div>
+    </div>
   </div>
 
-<script type="module">
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-import * as Tone from 'https://unpkg.com/tone@14.8.49/build/Tone.js';
+  <aside id="studio" aria-label="Audio studio controls">
+    <header class="studio-header">
+      <h1>AVODAH AUDIO STUDIO</h1>
+      <p>Sermon mix · auditorium feel · Sunday deck screen</p>
+    </header>
 
-// --- VISUAL AUDITORIUM 3D ---
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth*0.66/window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth*0.66, window.innerHeight);
-document.getElementById('auditorium').appendChild(renderer.domElement);
+    <section class="section">
+      <h2>Transport</h2>
+      <div class="row">
+        <button id="btnPlay" type="button">▶ Play Sermon</button>
+        <button id="btnStop" class="secondary" type="button">■ Stop</button>
+        <button id="btnRecord" class="danger" type="button">● Record</button>
+        <label class="file-btn" for="audioFile">Load Audio</label>
+        <input id="audioFile" type="file" accept="audio/*">
+      </div>
+      <p id="transportStatus" class="status-line">Load a sermon track or press play for a tone bed.</p>
+      <div class="meter" aria-hidden="true"><i id="levelMeter"></i></div>
+    </section>
 
-// Stage
-const stage = new THREE.Mesh(new THREE.BoxGeometry(10,0.5,4), new THREE.MeshStandardMaterial({color:0x222222}));
-stage.position.set(0,0,-5); scene.add(stage);
+    <section class="section">
+      <h2>Mix</h2>
+      <label class="control">
+        <span class="meta"><span>Main Volume</span><span id="volVal">-6 dB</span></span>
+        <input type="range" class="fader" id="vol" min="-40" max="0" value="-6" step="1">
+      </label>
+      <label class="control">
+        <span class="meta"><span>Reverb (Auditorium Feel)</span><span id="reverbVal">35%</span></span>
+        <input type="range" class="fader" id="reverb" min="0" max="100" value="35" step="1">
+      </label>
+      <label class="control">
+        <span class="meta"><span>Mic 1 — Pastor</span><span id="mic1Val">70%</span></span>
+        <input type="range" class="fader" id="mic1" min="0" max="100" value="70" step="1">
+      </label>
+      <label class="control">
+        <span class="meta"><span>Mic 2 — Worship</span><span id="mic2Val">55%</span></span>
+        <input type="range" class="fader" id="mic2" min="0" max="100" value="55" step="1">
+      </label>
+    </section>
 
-// Screen for your Sunday Decks
-const screenGeo = new THREE.PlaneGeometry(6,3.5);
-const screenMat = new THREE.MeshBasicMaterial({color:0x000000});
-const screen = new THREE.Mesh(screenGeo, screenMat);
-screen.position.set(0,2.5,-6.9); scene.add(screen);
+    <section class="section">
+      <h2>Visual Auditorium</h2>
+      <div class="row">
+        <button id="btnLight" class="secondary" type="button">+ Stage Light</button>
+        <button id="btnScreen" class="secondary" type="button">Load Deck Slide</button>
+        <button id="btnAudience" class="secondary" type="button">Toggle Audience</button>
+      </div>
+      <div class="deck-list" id="deckList" aria-label="Sunday deck slides"></div>
+      <p id="visualStatus" class="status-line">Stage ready. Audience hidden.</p>
+    </section>
 
-// Lighting
-const light = new THREE.PointLight(0xc9a86a, 10, 20);
-light.position.set(0,5,0); scene.add(light);
-scene.add(new THREE.AmbientLight(0x404040));
+    <footer class="studio-footer">
+      <a href="index.html">← Integrated Avodah home</a>
+      · local browser studio · no host flash
+    </footer>
+  </aside>
 
-camera.position.set(0,3,5);
-function animate(){ requestAnimationFrame(animate); renderer.render(scene, camera); }
-animate();
+  <!-- Vendored offline: see vendor/README.md (three@0.160.0, tone@14.8.49) -->
+  <script src="vendor/tone/Tone.js"></script>
+  <script type="module">
+    import * as THREE from "./vendor/three/three.module.min.js";
+    const Tone = window.Tone;
+    if (!Tone) {
+      document.getElementById("transportStatus").textContent = "Tone.js failed to load (vendor/tone/Tone.js).";
+      document.getElementById("transportStatus").className = "status-line err";
+      throw new Error("Tone.js failed to load from vendor/tone/Tone.js");
+    }
 
-window.addLight = () => {
-  const l = new THREE.PointLight(0xffffff, 5, 10);
-  l.position.set((Math.random()-0.5)*8, 4, -5);
-  scene.add(l);
-}
-window.addScreen = () => {
-  // Load your Avodah deck as texture
-  const loader = new THREE.TextureLoader();
-  loader.load('file:///C:/Users/YOU/Documents/MyAvodahDrive/Sunday_Decks/latest.jpg', (tex)=>{
-    screen.material.map = tex; screen.material.needsUpdate = true;
-  });
-}
+    const DECK_SLIDES = [
+      "images/deck/01_avodah_title.svg",
+      "images/deck/02_response.svg",
+      "images/deck/03_colossians.svg",
+      "images/deck/04_prayer_desire.svg",
+      "images/deck/05_hosea.svg",
+      "images/deck/06_psalm85.svg",
+      "images/deck/07_closing_wheat.svg",
+    ];
 
-// --- AUDIO STUDIO ---
-const reverb = new Tone.Reverb(3).toDestination();
-const player = new Tone.Player().connect(reverb);
+    const els = {
+      auditorium: document.getElementById("auditorium"),
+      liveBadge: document.getElementById("liveBadge"),
+      viewBadge: document.getElementById("viewBadge"),
+      btnPlay: document.getElementById("btnPlay"),
+      btnStop: document.getElementById("btnStop"),
+      btnRecord: document.getElementById("btnRecord"),
+      audioFile: document.getElementById("audioFile"),
+      transportStatus: document.getElementById("transportStatus"),
+      levelMeter: document.getElementById("levelMeter"),
+      vol: document.getElementById("vol"),
+      volVal: document.getElementById("volVal"),
+      reverb: document.getElementById("reverb"),
+      reverbVal: document.getElementById("reverbVal"),
+      mic1: document.getElementById("mic1"),
+      mic1Val: document.getElementById("mic1Val"),
+      mic2: document.getElementById("mic2"),
+      mic2Val: document.getElementById("mic2Val"),
+      btnLight: document.getElementById("btnLight"),
+      btnScreen: document.getElementById("btnScreen"),
+      btnAudience: document.getElementById("btnAudience"),
+      deckList: document.getElementById("deckList"),
+      visualStatus: document.getElementById("visualStatus"),
+    };
 
-window.playTrack = async () => {
-  await Tone.start();
-  player.autostart = true;
-}
-window.recordTrack = async () => {
-  const mic = new Tone.UserMedia();
-  await mic.open();
-  mic.connect(reverb);
-  console.log("Recording...");
-}
-</script>
+    function setStatus(node, text, kind = "") {
+      node.textContent = text;
+      node.className = "status-line" + (kind ? ` ${kind}` : "");
+    }
+
+    function setBadge(node, text, kind = "") {
+      node.className = "badge" + (kind ? ` ${kind}` : "");
+      node.querySelector("span:last-child").textContent = text;
+    }
+
+    // --- Visual auditorium ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0d0d0d);
+    scene.fog = new THREE.Fog(0x0d0d0d, 12, 40);
+
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    els.auditorium.appendChild(renderer.domElement);
+
+    const stageCam = { position: new THREE.Vector3(0, 3.2, 7.5), lookAt: new THREE.Vector3(0, 1.5, -5) };
+    const audienceCam = { position: new THREE.Vector3(0, 2.2, 11.5), lookAt: new THREE.Vector3(0, 1.8, -5) };
+    let audienceView = false;
+
+    function applyCamera() {
+      const pose = audienceView ? audienceCam : stageCam;
+      camera.position.copy(pose.position);
+      camera.lookAt(pose.lookAt);
+    }
+    applyCamera();
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(24, 28),
+      new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.95 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.z = 2;
+    scene.add(floor);
+
+    const stage = new THREE.Mesh(
+      new THREE.BoxGeometry(12, 0.45, 5),
+      new THREE.MeshStandardMaterial({ color: 0x242424, metalness: 0.2, roughness: 0.7 })
+    );
+    stage.position.set(0, 0.22, -5);
+    scene.add(stage);
+
+    const screenMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 4.05), screenMat);
+    screen.position.set(0, 2.8, -7.2);
+    scene.add(screen);
+
+    const frame = new THREE.Mesh(
+      new THREE.BoxGeometry(7.5, 4.35, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.4, roughness: 0.45 })
+    );
+    frame.position.set(0, 2.8, -7.28);
+    scene.add(frame);
+
+    const keyLight = new THREE.PointLight(0xc9a86a, 40, 30);
+    keyLight.position.set(0, 5.5, -3);
+    scene.add(keyLight);
+    scene.add(new THREE.AmbientLight(0x404040, 0.7));
+    const rim = new THREE.DirectionalLight(0xffffff, 0.35);
+    rim.position.set(-4, 6, 2);
+    scene.add(rim);
+
+    const audienceGroup = new THREE.Group();
+    audienceGroup.visible = false;
+    const pewMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.85 });
+    for (let row = 0; row < 6; row += 1) {
+      for (let col = -3; col <= 3; col += 1) {
+        if (col === 0) continue;
+        const pew = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.45, 0.55), pewMat);
+        pew.position.set(col * 1.35, 0.25, 1.2 + row * 1.35);
+        audienceGroup.add(pew);
+      }
+    }
+    scene.add(audienceGroup);
+
+    const textureLoader = new THREE.TextureLoader();
+    let deckIndex = 0;
+
+    function slideLabel(path) {
+      return path.split("/").pop().replace(/\.[^.]+$/, "").replace(/[_-]/g, " ");
+    }
+
+    function loadDeck(path, announce = true) {
+      textureLoader.load(
+        path,
+        (tex) => {
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+          tex.needsUpdate = true;
+          if (screen.material.map) screen.material.map.dispose();
+          screen.material.map = tex;
+          screen.material.color.set(0xffffff);
+          screen.material.needsUpdate = true;
+          deckIndex = Math.max(0, DECK_SLIDES.indexOf(path));
+          [...els.deckList.querySelectorAll("button")].forEach((btn, i) => {
+            btn.classList.toggle("active", DECK_SLIDES[i] === path);
+          });
+          if (announce) setStatus(els.visualStatus, `Deck loaded: ${slideLabel(path)}`, "ok");
+        },
+        undefined,
+        () => setStatus(els.visualStatus, `Could not load deck image: ${path}`, "err")
+      );
+    }
+
+    DECK_SLIDES.forEach((path, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = slideLabel(path);
+      btn.addEventListener("click", () => loadDeck(path));
+      if (i === 0) btn.classList.add("active");
+      els.deckList.appendChild(btn);
+    });
+
+    function resizeRenderer() {
+      const w = els.auditorium.clientWidth || 1;
+      const h = els.auditorium.clientHeight || 1;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+    }
+    resizeRenderer();
+    window.addEventListener("resize", resizeRenderer);
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(resizeRenderer).observe(els.auditorium);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      keyLight.intensity = 36 + Math.sin(performance.now() * 0.0015) * 4;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // --- Audio studio ---
+    const master = new Tone.Gain(1).toDestination();
+    const reverb = new Tone.Reverb({ decay: 3.2, wet: 0.35 });
+    await reverb.generate();
+    const sermonGain = new Tone.Gain(1);
+    const mic1Gain = new Tone.Gain(0.7);
+    const mic2Gain = new Tone.Gain(0.55);
+    const meter = new Tone.Meter({ normalRange: true });
+
+    sermonGain.connect(reverb);
+    mic1Gain.connect(reverb);
+    mic2Gain.connect(reverb);
+    reverb.connect(master);
+    master.connect(meter);
+
+    let player = new Tone.Player({ fadeIn: 0.05, fadeOut: 0.08 }).connect(sermonGain);
+    player.loop = true;
+    let objectUrl = null;
+    let hasTrack = false;
+    let mic1 = null;
+    let mic2 = null;
+    let recording = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let toneBed = null;
+    let recordDest = null;
+
+    function applyMix() {
+      const volDb = Number(els.vol.value);
+      Tone.Destination.volume.value = volDb;
+      els.volVal.textContent = `${volDb} dB`;
+
+      const wet = Number(els.reverb.value) / 100;
+      reverb.wet.value = wet;
+      els.reverbVal.textContent = `${els.reverb.value}%`;
+
+      mic1Gain.gain.value = Number(els.mic1.value) / 100;
+      els.mic1Val.textContent = `${els.mic1.value}%`;
+      mic2Gain.gain.value = Number(els.mic2.value) / 100;
+      els.mic2Val.textContent = `${els.mic2.value}%`;
+    }
+    applyMix();
+
+    ["vol", "reverb", "mic1", "mic2"].forEach((id) => {
+      els[id].addEventListener("input", applyMix);
+    });
+
+    async function ensureAudio() {
+      await Tone.start();
+      applyMix();
+    }
+
+    function startToneBed() {
+      if (toneBed) return;
+      const synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.8, decay: 0.4, sustain: 0.55, release: 1.2 },
+      }).connect(sermonGain);
+      synth.volume.value = -18;
+      synth.triggerAttack(["C3", "G3", "E4"], Tone.now());
+      toneBed = synth;
+    }
+
+    function stopToneBed() {
+      if (!toneBed) return;
+      toneBed.releaseAll();
+      toneBed.dispose();
+      toneBed = null;
+    }
+
+    async function playTrack() {
+      try {
+        await ensureAudio();
+        stopToneBed();
+        if (hasTrack && player.loaded) {
+          if (player.state === "started") player.stop();
+          player.start();
+          setStatus(els.transportStatus, "Playing loaded sermon audio.", "ok");
+        } else {
+          startToneBed();
+          setStatus(
+            els.transportStatus,
+            "No file loaded — playing gentle tone bed. Use Load Audio for a sermon.",
+            "warn"
+          );
+        }
+        setBadge(els.liveBadge, "Live", "live");
+        els.btnPlay.classList.add("active");
+      } catch (err) {
+        setStatus(els.transportStatus, `Play failed: ${err.message || err}`, "err");
+      }
+    }
+
+    function stopTrack() {
+      try {
+        if (player.state === "started") player.stop();
+      } catch (_) { /* ignore */ }
+      stopToneBed();
+      els.btnPlay.classList.remove("active");
+      if (!recording) setBadge(els.liveBadge, "Idle");
+      setStatus(els.transportStatus, hasTrack ? "Stopped. Track still loaded." : "Stopped.", "ok");
+    }
+
+    async function recordTrack() {
+      try {
+        await ensureAudio();
+        if (recording) {
+          if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+          if (mic1) {
+            mic1.close();
+            mic1.disconnect();
+            mic1 = null;
+          }
+          if (mic2) {
+            mic2.close();
+            mic2.disconnect();
+            mic2 = null;
+          }
+          recording = false;
+          els.btnRecord.classList.remove("active");
+          els.btnRecord.textContent = "● Record";
+          if (player.state !== "started" && !toneBed) setBadge(els.liveBadge, "Idle");
+          return;
+        }
+
+        mic1 = new Tone.UserMedia();
+        await mic1.open();
+        mic1.connect(mic1Gain);
+        // Worship bus is gain-staged from the same input (single device).
+        mic1.connect(mic2Gain);
+        mic2 = null;
+
+        if (!recordDest) {
+          recordDest = Tone.context.createMediaStreamDestination();
+          master.connect(recordDest);
+        }
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(recordDest.stream);
+        mediaRecorder.ondataavailable = (ev) => {
+          if (ev.data && ev.data.size > 0) recordedChunks.push(ev.data);
+        };
+        mediaRecorder.onstop = () => {
+          if (!recordedChunks.length) {
+            setStatus(els.transportStatus, "Recording ended — no audio captured.", "warn");
+            return;
+          }
+          const blob = new Blob(recordedChunks, { type: "audio/webm" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `avodah-sermon-${Date.now()}.webm`;
+          a.click();
+          URL.revokeObjectURL(url);
+          setStatus(els.transportStatus, "Recording saved to downloads.", "ok");
+        };
+        mediaRecorder.start();
+
+        recording = true;
+        els.btnRecord.classList.add("active");
+        els.btnRecord.textContent = "■ Stop Rec";
+        setBadge(els.liveBadge, "Recording", "rec");
+        setStatus(els.transportStatus, "Recording mic through auditorium reverb…", "ok");
+      } catch (err) {
+        recording = false;
+        els.btnRecord.classList.remove("active");
+        els.btnRecord.textContent = "● Record";
+        setStatus(els.transportStatus, `Mic/record failed: ${err.message || err}`, "err");
+      }
+    }
+
+    els.audioFile.addEventListener("change", async () => {
+      const file = els.audioFile.files && els.audioFile.files[0];
+      if (!file) return;
+      try {
+        await ensureAudio();
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+        stopTrack();
+        hasTrack = false;
+        player.dispose();
+        player = new Tone.Player({
+          url: objectUrl,
+          loop: true,
+          fadeIn: 0.05,
+          fadeOut: 0.08,
+        }).connect(sermonGain);
+        setStatus(els.transportStatus, `Loading: ${file.name}…`, "warn");
+        await player.load(objectUrl);
+        hasTrack = true;
+        setStatus(els.transportStatus, `Loaded: ${file.name}`, "ok");
+      } catch (err) {
+        hasTrack = false;
+        setStatus(els.transportStatus, `Load failed: ${err.message || err}`, "err");
+      }
+    });
+
+    function addLight() {
+      const colors = [0xffffff, 0xc9a86a, 0x88aaff, 0xffd9a0];
+      const light = new THREE.PointLight(colors[Math.floor(Math.random() * colors.length)], 18, 14);
+      light.position.set((Math.random() - 0.5) * 10, 3 + Math.random() * 2, -3 + (Math.random() - 0.5) * 4);
+      scene.add(light);
+      const bulb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 12, 12),
+        new THREE.MeshBasicMaterial({ color: light.color })
+      );
+      bulb.position.copy(light.position);
+      scene.add(bulb);
+      setStatus(els.visualStatus, "Added stage light.", "ok");
+    }
+
+    function addScreen() {
+      deckIndex = (deckIndex + 1) % DECK_SLIDES.length;
+      loadDeck(DECK_SLIDES[deckIndex]);
+    }
+
+    function toggleAudience() {
+      audienceView = !audienceView;
+      audienceGroup.visible = audienceView;
+      applyCamera();
+      els.btnAudience.classList.toggle("active", audienceView);
+      setBadge(els.viewBadge, audienceView ? "Audience view" : "Stage view");
+      setStatus(
+        els.visualStatus,
+        audienceView ? "Audience view enabled — pews visible." : "Stage view — audience hidden.",
+        "ok"
+      );
+    }
+
+    function tickMeter() {
+      const level = Math.max(0, Math.min(1, meter.getValue() || 0));
+      els.levelMeter.style.width = `${Math.round(level * 100)}%`;
+      requestAnimationFrame(tickMeter);
+    }
+    tickMeter();
+
+    els.btnPlay.addEventListener("click", playTrack);
+    els.btnStop.addEventListener("click", stopTrack);
+    els.btnRecord.addEventListener("click", recordTrack);
+    els.btnLight.addEventListener("click", addLight);
+    els.btnScreen.addEventListener("click", addScreen);
+    els.btnAudience.addEventListener("click", toggleAudience);
+
+    loadDeck(DECK_SLIDES[0], false);
+    setStatus(els.visualStatus, "Stage ready. Audience hidden.");
+  </script>
 </body>
 </html>
