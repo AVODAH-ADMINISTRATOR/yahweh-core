@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.awakenAgentNativeCore = awakenAgentNativeCore;
 const sanctuary_gateway_1 = require("./sanctuary-gateway");
+const MAX_PROVENANCE_REFERENCES = 50;
+const MAX_PROVENANCE_LENGTH = 1000;
 function curateDataOnly(event, draft) {
     if (draft === null || typeof draft !== 'object' || typeof draft.summary !== 'string') {
         throw new Error('Curator output must be structured historical data');
@@ -23,9 +25,12 @@ function curateDataOnly(event, draft) {
     if (!Array.isArray(draft.provenance) || draft.provenance.length === 0) {
         throw new Error('Curator output must include provenance');
     }
+    if (draft.provenance.length > MAX_PROVENANCE_REFERENCES) {
+        throw new Error('Curator output contains too many provenance references');
+    }
     const allowedProvenance = new Set(event.provenance);
     const provenance = draft.provenance.map((source) => {
-        if (typeof source !== 'string' || !allowedProvenance.has(source)) {
+        if (typeof source !== 'string' || source.length > MAX_PROVENANCE_LENGTH || !allowedProvenance.has(source)) {
             throw new Error('Curator output contains unsupported provenance');
         }
         return source;
@@ -49,23 +54,26 @@ async function awakenAgentNativeCore(dependencies) {
     await dependencies.relational.initialize();
     const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
         let historicalEventId = 'unavailable';
-        let result = 'CURATION_REJECTED';
+        const record = (result) => dependencies.governanceLedger.append({
+            event: result,
+            stewardId,
+            historicalEventId,
+            timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+        });
+        let component;
         try {
             const event = (0, sanctuary_gateway_1.sanitize)(rawEvent);
             historicalEventId = event.id;
             const draft = await dependencies.curator.curate(event, dependencies.systemPrompt);
-            const component = curateDataOnly(event, draft);
-            await dependencies.relational.deployComponent(component);
-            result = 'CURATION_DEPLOYED';
+            component = curateDataOnly(event, draft);
         }
-        finally {
-            await dependencies.governanceLedger.append({
-                event: result,
-                stewardId,
-                historicalEventId,
-                timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
-            });
+        catch (error) {
+            await record('CURATION_REJECTED');
+            throw error;
         }
+        // The durable governance record must complete before anything is deployed.
+        await record('CURATION_DEPLOYED');
+        await dependencies.relational.deployComponent(component);
     });
     return { status: 'READY', stop: unsubscribe };
 }
