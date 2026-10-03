@@ -86,7 +86,7 @@ describe('dependency-injected historical curator', () => {
       relational,
       curator: {
         async curate() {
-          return { summary: '<script>untrusted</script>', provenance: event.provenance, completeness: 'incomplete' }
+          return { summary: 'Plain summary without the required prefix', provenance: event.provenance, completeness: 'incomplete' }
         },
       },
       governanceLedger,
@@ -94,9 +94,64 @@ describe('dependency-injected historical curator', () => {
       systemPrompt: 'Do not fabricate.',
     })
 
-    await expect(catalog.emit(event)).rejects.toThrow('plain text')
+    await expect(catalog.emit(event)).rejects.toThrow('record incomplete')
     expect(relational.deployed).toHaveLength(0)
     expect(governanceLedger.records[0].event).toBe('CURATION_REJECTED')
+    runtime.stop()
+  })
+
+  it('rejects unbounded curator provenance', async () => {
+    const catalog = mockCatalog()
+    const relational = mockRelational()
+    const governanceLedger = mockGovernanceLedger()
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational,
+      curator: {
+        async curate() {
+          return { summary: event.summary, provenance: Array(51).fill(event.provenance[0]), completeness: 'complete' }
+        },
+      },
+      governanceLedger,
+      stewardId: 'steward-1',
+      systemPrompt: 'Do not fabricate.',
+    })
+
+    await expect(catalog.emit(event)).rejects.toThrow('too many provenance')
+    expect(relational.deployed).toHaveLength(0)
+    runtime.stop()
+  })
+
+  it('rejects catalog events with too many provenance references', () => {
+    expect(() => sanitize({ ...event, provenance: Array(51).fill('archive:x') })).toThrow('too many provenance')
+  })
+
+  it('finishes the governance ledger append before deploying', async () => {
+    const catalog = mockCatalog()
+    const order: string[] = []
+    const relational = mockRelational()
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational: {
+        ...relational,
+        async deployComponent(component) {
+          order.push('deploy')
+          await relational.deployComponent(component)
+        },
+      },
+      curator: mockCurator(),
+      governanceLedger: {
+        async append() {
+          await new Promise((resolve) => setTimeout(resolve, 10))
+          order.push('ledger')
+        },
+      },
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+
+    await catalog.emit(event)
+    expect(order).toEqual(['ledger', 'deploy'])
     runtime.stop()
   })
 })

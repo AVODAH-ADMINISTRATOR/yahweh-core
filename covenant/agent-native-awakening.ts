@@ -49,6 +49,9 @@ export interface AwakeningDependencies {
   now?: () => Date
 }
 
+const MAX_PROVENANCE_REFERENCES = 50
+const MAX_PROVENANCE_LENGTH = 1000
+
 function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedComponent {
   if (draft === null || typeof draft !== 'object' || typeof draft.summary !== 'string') {
     throw new Error('Curator output must be structured historical data')
@@ -70,10 +73,13 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
   if (!Array.isArray(draft.provenance) || draft.provenance.length === 0) {
     throw new Error('Curator output must include provenance')
   }
+  if (draft.provenance.length > MAX_PROVENANCE_REFERENCES) {
+    throw new Error('Curator output contains too many provenance references')
+  }
 
   const allowedProvenance = new Set(event.provenance)
   const provenance = draft.provenance.map((source) => {
-    if (typeof source !== 'string' || !allowedProvenance.has(source)) {
+    if (typeof source !== 'string' || source.length > MAX_PROVENANCE_LENGTH || !allowedProvenance.has(source)) {
       throw new Error('Curator output contains unsupported provenance')
     }
     return source
@@ -101,22 +107,26 @@ export async function awakenAgentNativeCore(dependencies: AwakeningDependencies)
 
   const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
     let historicalEventId = 'unavailable'
-    let result: GovernanceRecord['event'] = 'CURATION_REJECTED'
-    try {
-      const event = sanitize(rawEvent)
-      historicalEventId = event.id
-      const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
-      const component = curateDataOnly(event, draft)
-      await dependencies.relational.deployComponent(component)
-      result = 'CURATION_DEPLOYED'
-    } finally {
-      await dependencies.governanceLedger.append({
+    const record = (result: GovernanceRecord['event']): Promise<void> | void =>
+      dependencies.governanceLedger.append({
         event: result,
         stewardId,
         historicalEventId,
         timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
       })
+    let component: CuratedComponent
+    try {
+      const event = sanitize(rawEvent)
+      historicalEventId = event.id
+      const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
+      component = curateDataOnly(event, draft)
+    } catch (error) {
+      await record('CURATION_REJECTED')
+      throw error
     }
+    // The durable governance record must complete before anything is deployed.
+    await record('CURATION_DEPLOYED')
+    await dependencies.relational.deployComponent(component)
   })
 
   return { status: 'READY', stop: unsubscribe }

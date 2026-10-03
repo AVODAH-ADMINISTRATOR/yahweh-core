@@ -137,3 +137,37 @@ def test_kernel_can_use_a_persistent_jsonl_ledger(tmp_path: Path):
     assert restored.verify_chain()
     assert len(restored) == len(kernel.ledger)
     assert any(entry.event == "KERNEL_BOOT" for entry in restored.entries)
+
+
+def test_concurrent_appends_keep_the_chain_intact(tmp_path: Path):
+    import threading
+
+    ledger = LifecycleLedger(tmp_path / "concurrent.jsonl")
+    threads = [
+        threading.Thread(target=ledger.append, args=(KernelDomain.LEDGER, f"EVENT_{n}"))
+        for n in range(20)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert len(ledger) == 20
+    assert ledger.verify_chain()
+    assert LifecycleLedger(tmp_path / "concurrent.jsonl").verify_chain()
+
+
+def test_forged_seal_marker_and_bad_identifiers_are_rejected():
+    from council_os.ledger import DualControlApproval
+
+    ledger = LifecycleLedger()
+    original = ledger.append(KernelDomain.LEDGER, "ORIGINAL")
+    ledger.append(KernelDomain.LEDGER, f"LEDGER_ENTRY_SEALED:{original.index}")
+    assert not ledger.is_sealed(original.index)
+    approval = DualControlApproval("witness-a", "witness-b", "correction")
+    with pytest.raises(CharterViolation, match="sealed source"):
+        ledger.compensate_sealed(original.index, KernelDomain.LEDGER, "COMPENSATION", approval)
+    for bad in (True, "0", -1, 99):
+        with pytest.raises(CharterViolation, match="unknown ledger entry"):
+            ledger.seal(bad)
+        with pytest.raises(CharterViolation, match="unknown ledger entry"):
+            ledger.compensate_sealed(bad, KernelDomain.LEDGER, "COMPENSATION", approval)
