@@ -13,6 +13,12 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from contextlib import contextmanager
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
@@ -39,6 +45,8 @@ class LedgerEntry:
     timestamp: str
     sealed: bool = False
     redacted: bool = True
+    seal_target_index: Optional[int] = None
+    seal_target_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -114,15 +122,52 @@ class LifecycleLedger:
         self.storage_path = Path(storage_path) if storage_path is not None else None
         self._entries: List[LedgerEntry] = []
         self._value_memory: Optional[str] = None
-        if self.storage_path is not None and self.storage_path.exists():
+        if self.storage_path is not None:
+            with self._storage_lock():
+                self._reload_storage()
+
+    @contextmanager
+    def _storage_lock(self):
+        if self.storage_path is None:
+            yield
+            return
+
+        self.storage_path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path = self.storage_path.with_name(f"{self.storage_path.name}.lock")
+        descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+        with os.fdopen(descriptor, "r+b") as handle:
+            if os.name == "nt":
+                handle.seek(0, os.SEEK_END)
+                if handle.tell() == 0:
+                    handle.write(b"\0")
+                    handle.flush()
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                if os.name == "nt":
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+    def _reload_storage(self) -> None:
+        if self.storage_path is None:
+            return
+        entries: List[LedgerEntry] = []
+        if self.storage_path.exists():
             try:
                 for line in self.storage_path.read_text(encoding="utf-8").splitlines():
                     if line.strip():
-                        self._entries.append(LedgerEntry(**json.loads(line)))
+                        entries.append(LedgerEntry(**json.loads(line)))
             except (OSError, TypeError, ValueError) as exc:
                 raise CharterViolation("invalid JSONL ledger") from exc
-            if not self.verify_chain():
-                raise CharterViolation("JSONL ledger integrity verification failed")
+        self._entries = entries
+        if not self.verify_chain():
+            raise CharterViolation("JSONL ledger integrity verification failed")
 
     def __len__(self) -> int:
         return len(self._entries)
@@ -143,12 +188,30 @@ class LifecycleLedger:
         payload: Optional[Dict[str, Any]] = None,
         sealed: bool = False,
     ) -> LedgerEntry:
+        if event.startswith("LEDGER_ENTRY_SEALED:"):
+            raise CharterViolation("seal markers must be created with seal()")
+        with self._storage_lock():
+            self._reload_storage()
+            return self._append_unlocked(domain, event, payload, sealed)
+
+    def _append_unlocked(
+        self,
+        domain: KernelDomain,
+        event: str,
+        payload: Optional[Dict[str, Any]] = None,
+        sealed: bool = False,
+        seal_target_index: Optional[int] = None,
+        seal_target_id: Optional[str] = None,
+    ) -> LedgerEntry:
         safe = redact_payload(payload or {})
         payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
         prev_hash = self.head_hash()
         index = len(self._entries)
         timestamp = _utc_now()
-        material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
+        material = self._entry_material(
+            index, domain.value, event, payload_hash, prev_hash, timestamp, sealed,
+            seal_target_index, seal_target_id,
+        )
         entry_hash = sha256_hex(material)
         entry = LedgerEntry(
             index=index,
@@ -161,6 +224,8 @@ class LifecycleLedger:
             timestamp=timestamp,
             sealed=sealed,
             redacted=True,
+            seal_target_index=seal_target_index,
+            seal_target_id=seal_target_id,
         )
         if self.storage_path is not None:
             self.storage_path.parent.mkdir(parents=True, exist_ok=True)
@@ -174,23 +239,31 @@ class LifecycleLedger:
         return entry
 
     def seal(self, index: int) -> LedgerEntry:
-        if index < 0 or index >= len(self._entries):
-            raise CharterViolation("unknown ledger entry")
-        if self.is_sealed(index):
-            raise CharterViolation("ledger entry already sealed")
-        target = self._entries[index]
-        return self.append(
-            KernelDomain(target.domain),
-            f"LEDGER_ENTRY_SEALED:{index}",
-            {"sealed_index": index, "sealed_entry_id": target.entry_id},
-            sealed=True,
-        )
+        with self._storage_lock():
+            self._reload_storage()
+            if index < 0 or index >= len(self._entries):
+                raise CharterViolation("unknown ledger entry")
+            if self.is_sealed(index):
+                raise CharterViolation("ledger entry already sealed")
+            target = self._entries[index]
+            return self._append_unlocked(
+                KernelDomain(target.domain),
+                f"LEDGER_ENTRY_SEALED:{index}",
+                {"sealed_index": index, "sealed_entry_id": target.entry_id},
+                sealed=True,
+                seal_target_index=index,
+                seal_target_id=target.entry_id,
+            )
 
     def is_sealed(self, index: int) -> bool:
         if index < 0 or index >= len(self._entries):
             return False
         return self._entries[index].sealed or any(
-            entry.event == f"LEDGER_ENTRY_SEALED:{index}" for entry in self._entries
+            entry.sealed
+            and entry.event == f"LEDGER_ENTRY_SEALED:{index}"
+            and entry.seal_target_index == index
+            and entry.seal_target_id == self._entries[index].entry_id
+            for entry in self._entries
         )
 
     def rewrite(self, _index: int, _payload: Dict[str, Any]) -> None:
@@ -205,19 +278,21 @@ class LifecycleLedger:
         payload: Optional[Dict[str, Any]] = None,
     ) -> LedgerEntry:
         approval.validate()
-        if not self.is_sealed(index):
-            raise CharterViolation("compensation requires a sealed source entry")
-        return self.append(
-            domain,
-            event,
-            {
-                "compensates": index,
-                "witness_a_hash": sha256_hex(approval.actor_a),
-                "witness_b_hash": sha256_hex(approval.actor_b),
-                "reason_hash": sha256_hex(approval.reason),
-                **(payload or {}),
-            },
-        )
+        with self._storage_lock():
+            self._reload_storage()
+            if not self.is_sealed(index):
+                raise CharterViolation("compensation requires a sealed source entry")
+            return self._append_unlocked(
+                domain,
+                event,
+                {
+                    "compensates": index,
+                    "witness_a_hash": sha256_hex(approval.actor_a),
+                    "witness_b_hash": sha256_hex(approval.actor_b),
+                    "reason_hash": sha256_hex(approval.reason),
+                    **(payload or {}),
+                },
+            )
 
     def remember_value(self, _amount: Any) -> None:
         raise CharterViolation("NO_AI_VALUE_MEMORY")
@@ -230,9 +305,26 @@ class LifecycleLedger:
         for index, entry in enumerate(self._entries):
             if entry.index != index or entry.prev_hash != prev:
                 return False
-            material = (
-                f"{entry.index}:{entry.domain}:{entry.event}:{entry.payload_hash}:"
-                f"{entry.prev_hash}:{entry.timestamp}:{entry.sealed}"
+            if (
+                entry.event.startswith("LEDGER_ENTRY_SEALED:")
+                or entry.seal_target_index is not None
+                or entry.seal_target_id is not None
+            ):
+                target_index = entry.seal_target_index
+                if (
+                    entry.sealed is not True
+                    or isinstance(target_index, bool)
+                    or not isinstance(target_index, int)
+                    or entry.event != f"LEDGER_ENTRY_SEALED:{target_index}"
+                    or target_index < 0
+                    or target_index >= index
+                    or entry.seal_target_id != self._entries[target_index].entry_id
+                ):
+                    return False
+            material = self._entry_material(
+                entry.index, entry.domain, entry.event, entry.payload_hash,
+                entry.prev_hash, entry.timestamp, entry.sealed,
+                entry.seal_target_index, entry.seal_target_id,
             )
             expected_hash = sha256_hex(material)
             if entry.entry_hash != expected_hash:
@@ -245,3 +337,20 @@ class LifecycleLedger:
                 return False
             prev = entry.entry_hash
         return True
+
+    @staticmethod
+    def _entry_material(
+        index: int,
+        domain: str,
+        event: str,
+        payload_hash: str,
+        prev_hash: str,
+        timestamp: str,
+        sealed: bool,
+        seal_target_index: Optional[int] = None,
+        seal_target_id: Optional[str] = None,
+    ) -> str:
+        material = f"{index}:{domain}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
+        if seal_target_index is not None or seal_target_id is not None:
+            material += f":{seal_target_index}:{seal_target_id}"
+        return material

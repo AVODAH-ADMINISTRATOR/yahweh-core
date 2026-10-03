@@ -34,12 +34,16 @@ export function mockCatalog() {
 export function mockRelational() {
   const initialized: boolean[] = []
   const deployed: CuratedComponent[] = []
+  const deployedEventIds = new Set<string>()
   const relational: RelationalCore = {
     async initialize() {
       initialized.push(true)
     },
     async deployComponent(component) {
-      deployed.push(component)
+      if (!deployedEventIds.has(component.eventId)) {
+        deployedEventIds.add(component.eventId)
+        deployed.push(component)
+      }
     },
   }
   return { ...relational, initialized, deployed }
