@@ -108,3 +108,55 @@ authority: Yahweh / Adam Christopher Mallamo
 ## Draft seal
 
 > YAHWEH IS AUTHORITY ROUGH DRAFT OR HELD. AMEN
+
+## Supplemental submission — final 9-gate sequence (HELD-423)
+
+This section records the later sequence-verification submission as received. Its claims have **not** been independently verified against source artifacts, `gate-seal-schema.json`, or a runnable verifier. Recording the submission does not execute a gate, verify a digest, or change the HELD status.
+
+### Submitted sequence
+
+```text
+1. territory-scan
+2. attestation-verify
+3. legal-log-verify
+4. factory-sync
+5. honor-review
+6. worklog-verify
+7. security-audit (NEW)
+8. held-queue
+9. daily-brief
+```
+
+The submission places `security-audit` after all six preceding substantive gates and before `held-queue`, and claims it audits all six. Gate 7 remains the stated position; Gate 3 is not substituted absent explicit confirmation. The submission describes the Sabbath state as **HELD-423**, security sequence only: staged, not executed; no structural code changes, deploy, verification, or run. It says five items are staged in `persuasions.jsonl` as `kind=persuasion`, `status=proposal`.
+
+### Nine staged artifact claims
+
+Digest text below is transcribed from the submission, with line-break fragments joined by a space. Digests, byte counts, provenance, and statuses are **source-reported and unverified**; no corresponding artifact files or gate-seal schema were found in the repository. A 64-character hexadecimal string is the expected SHA-256 representation. Entries 4, 5, and 8 contain 65 hexadecimal characters as supplied and therefore are not valid SHA-256 representations in this form. Even well-formed strings are not proof of artifact integrity unless checked against the actual bytes.
+
+| # / group | Artifact (`gate`) | SHA-256 text as supplied (unverified) | Bytes / stated provenance | Stated status |
+| --- | --- | --- | --- | --- |
+| 1 · Architecture & Infrastructure | Territory Scan Configuration (`territory-scan`) | `e3b0c44298fc1c149afbf4c8996fb92427ae 41e4649b934ca495991b7852b855` | 4,192 · Cloudflare Edge Network Diagnostics | Staged under strict edge rules. |
+| 2 · Architecture & Infrastructure | Cryptographic Attestation Manifest (`attestation-verify`) | `fa72458a2f4c39e240173e16b9b32c695b21 11c1256384c251bb7e2968143921` | 8,114 · Origin KMS Provider | Complete attestation binding applied. |
+| 3 · Architecture & Infrastructure | Legal Compliance Ledger (`legal-log-verify`) | `8c3a9d113d09a25b33170e7e119b12c87ae5 1e4649b934ca495991b7852b855b` | 12,450 · GitHub Compliance Webhook Archive | Multi-jurisdictional compliance logs locked. |
+| 4 · Operations & Identity | Factory Synchronization Protocol (`factory-sync`) | `4d5216bc92049025186b11d33190b12c87a0 51e4649b934ca495991b7852b855c` | 16,802 · OS Backend Engine Local State | Pipeline state mirrored with zero pending sync deltas. |
+| 5 · Operations & Identity | Honor-Review Audit Trail (`honor-review`) | `7c8a91bc92049c25186b11d33190b12c87ae 5164649b934ca495991b7852b855d` | 5,231 · Peer-attested decentralized ledger | Reputation metrics verified and locked. |
+| 6 · Operations & Identity | Worklog Ledger Verification (`worklog-verify`) | `1a2b3c4d5c6f7a8b9c0d1c2f304b5c6d7c8f 9a0b1c2d3e4f5a6b7c8d9e0f1a2b` | 22,140 · Compiled Task Engine Logs | Action history finalized; deep structural paths validated. |
+| 7 · Audit, Queue & Reporting | Late-Security Cryptographic Audit (`security-audit`) | `9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a 1f0e9d8c7b6a5f4e3d2c1b0a9f8e` | 31,459 · `verify_gate_seal.py` | Claimed formally sealed as Gate 7; claimed full compliance across all six preceding gates. |
+| 8 · Audit, Queue & Reporting | Held-Queue Isolation Matrix (`held-queue`) | `bc2145fa824c39e240173e16b9b32c695b21 11c1256384c251bb7e2968143921f` | 14,002 · Network Isolation Rule-Set | Claimed enforced under HELD-423 Sabbath guidelines. |
+| 9 · Audit, Queue & Reporting | Daily Brief Aggregator (`daily-brief`) | `3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d 1e2f3a4b5c6d7e8f9a0b1c2d3e4f` | 9,774 · Master Compiled Executive Summary | Staged as the final pipeline step. |
+
+### Staged target deduplication proposals
+
+The submission attributes these planned code consolidations to `persuasions.json` and `App.tsx`; they are proposals, not applied changes:
+
+| Reported lines | Reported overlap | Proposed resolution |
+| --- | --- | --- |
+| 179–229 | Core gate | Consolidate the rendering matrix into a uniform mapping array. |
+| 259–279 | Duplicate | Replace with an attestation single global check-context lookup. |
+| 184–214 | Local state interceptors | Replace with streamlined hook tracking. |
+
+**Repository check:** the available file at `/home/runner/work/yahweh-core/yahweh-core/frontend/src/App.tsx` is 43 lines long, so the reported line ranges do not match that file. `persuasions.json`, `persuasions.jsonl`, `gate-seal-schema.json`, and `verify_gate_seal.py` were not found in the repository. No code changes have been made for these proposals.
+
+### Provenance and confidence metrics
+
+The submission ends with this heading but supplies no metrics or supporting verification evidence. Confidence and provenance therefore remain unassessed; no independent cryptographic verification is recorded here.
