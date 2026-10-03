@@ -9,9 +9,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
+import threading
 from dataclasses import asdict, dataclass
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from council_os.constraints import CharterViolation
@@ -25,6 +27,30 @@ def _utc_now() -> str:
 
 def sha256_hex(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _lock_file(descriptor: int) -> None:
+    if os.name == "nt":
+        import msvcrt
+
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+
+
+def _unlock_file(descriptor: int) -> None:
+    if os.name == "nt":
+        import msvcrt
+
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
 
 
 @dataclass
@@ -114,15 +140,21 @@ class LifecycleLedger:
         self.storage_path = Path(storage_path) if storage_path is not None else None
         self._entries: List[LedgerEntry] = []
         self._value_memory: Optional[str] = None
+        self._lock = threading.RLock()
         if self.storage_path is not None and self.storage_path.exists():
-            try:
-                for line in self.storage_path.read_text(encoding="utf-8").splitlines():
-                    if line.strip():
-                        self._entries.append(LedgerEntry(**json.loads(line)))
-            except (OSError, TypeError, ValueError) as exc:
-                raise CharterViolation("invalid JSONL ledger") from exc
+            self._entries = self._read_entries()
             if not self.verify_chain():
                 raise CharterViolation("JSONL ledger integrity verification failed")
+
+    def _read_entries(self) -> List[LedgerEntry]:
+        try:
+            entries = []
+            for line in self.storage_path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    entries.append(LedgerEntry(**json.loads(line)))
+            return entries
+        except (OSError, TypeError, ValueError) as exc:
+            raise CharterViolation("invalid JSONL ledger") from exc
 
     def __len__(self) -> int:
         return len(self._entries)
@@ -143,35 +175,64 @@ class LifecycleLedger:
         payload: Optional[Dict[str, Any]] = None,
         sealed: bool = False,
     ) -> LedgerEntry:
-        safe = redact_payload(payload or {})
-        payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
-        prev_hash = self.head_hash()
-        index = len(self._entries)
-        timestamp = _utc_now()
-        material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
-        entry_hash = sha256_hex(material)
-        entry = LedgerEntry(
-            index=index,
-            entry_id=self.record_id(index, domain.value, entry_hash),
-            domain=domain.value,
-            event=event,
-            payload_hash=payload_hash,
-            prev_hash=prev_hash,
-            entry_hash=entry_hash,
-            timestamp=timestamp,
-            sealed=sealed,
-            redacted=True,
-        )
-        if self.storage_path is not None:
-            self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-            encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
-            descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-            with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
-                handle.write(encoded)
-                handle.flush()
-                os.fsync(handle.fileno())
-        self._entries.append(entry)
-        return entry
+        with self._lock:
+            descriptor = None
+            try:
+                if self.storage_path is not None:
+                    self.storage_path.parent.mkdir(parents=True, exist_ok=True)
+                    descriptor = os.open(self.storage_path, os.O_RDWR | os.O_CREAT, 0o600)
+                    _lock_file(descriptor)
+                    self._entries = self._read_entries() if os.fstat(descriptor).st_size else []
+                    if not self.verify_chain():
+                        raise CharterViolation("JSONL ledger integrity verification failed")
+
+                safe = redact_payload(payload or {})
+                payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
+                index = len(self._entries)
+                seal_marker = re.fullmatch(r"LEDGER_ENTRY_SEALED:(0|[1-9][0-9]*)", event)
+                if event.startswith("LEDGER_ENTRY_SEALED"):
+                    if seal_marker is None or not sealed:
+                        raise CharterViolation("invalid ledger seal record")
+                    target_index = int(seal_marker.group(1))
+                    if target_index >= index or self.is_sealed(target_index):
+                        raise CharterViolation("invalid ledger seal target")
+                    target = self._entries[target_index]
+                    expected_payload_hash = sha256_hex(json.dumps(
+                        {"sealed_index": target_index, "sealed_entry_id": target.entry_id},
+                        sort_keys=True,
+                        default=str,
+                    ))
+                    if domain.value != target.domain or payload_hash != expected_payload_hash:
+                        raise CharterViolation("invalid ledger seal target")
+                prev_hash = self.head_hash()
+                timestamp = _utc_now()
+                material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
+                entry_hash = sha256_hex(material)
+                entry = LedgerEntry(
+                    index=index,
+                    entry_id=self.record_id(index, domain.value, entry_hash),
+                    domain=domain.value,
+                    event=event,
+                    payload_hash=payload_hash,
+                    prev_hash=prev_hash,
+                    entry_hash=entry_hash,
+                    timestamp=timestamp,
+                    sealed=sealed,
+                    redacted=True,
+                )
+                if descriptor is not None:
+                    encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+                    os.lseek(descriptor, 0, os.SEEK_END)
+                    written = 0
+                    while written < len(encoded):
+                        written += os.write(descriptor, encoded[written:])
+                    os.fsync(descriptor)
+                self._entries.append(entry)
+                return entry
+            finally:
+                if descriptor is not None:
+                    _unlock_file(descriptor)
+                    os.close(descriptor)
 
     def seal(self, index: int) -> LedgerEntry:
         if index < 0 or index >= len(self._entries):
@@ -227,6 +288,7 @@ class LifecycleLedger:
 
     def verify_chain(self) -> bool:
         prev = self.GENESIS_HASH
+        sealed_targets = set()
         for index, entry in enumerate(self._entries):
             if entry.index != index or entry.prev_hash != prev:
                 return False
@@ -243,5 +305,23 @@ class LifecycleLedger:
                 return False
             if entry.entry_id != expected_id:
                 return False
+            seal_marker = re.fullmatch(r"LEDGER_ENTRY_SEALED:(0|[1-9][0-9]*)", entry.event)
+            if entry.event.startswith("LEDGER_ENTRY_SEALED"):
+                if seal_marker is None or not entry.sealed:
+                    return False
+                target_index = int(seal_marker.group(1))
+                if target_index >= index or target_index in sealed_targets:
+                    return False
+                target = self._entries[target_index]
+                if target.sealed:
+                    return False
+                expected_payload_hash = sha256_hex(json.dumps(
+                    {"sealed_index": target_index, "sealed_entry_id": target.entry_id},
+                    sort_keys=True,
+                    default=str,
+                ))
+                if entry.domain != target.domain or entry.payload_hash != expected_payload_hash:
+                    return False
+                sealed_targets.add(target_index)
             prev = entry.entry_hash
         return True

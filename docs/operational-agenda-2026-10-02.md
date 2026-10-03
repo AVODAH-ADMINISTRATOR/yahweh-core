@@ -20,7 +20,7 @@ In plain terms, nine separate research artifacts were consolidated into one work
 6. Gate-seal example
 7. Verifier
 8. Schema
-9. Al action history
+9. AI action history
 
 ### Foundation, tasks, and phases
 
@@ -127,7 +127,7 @@ This section records the later sequence-verification submission as received. Its
 9. daily-brief
 ```
 
-The submission places `security-audit` after all six preceding substantive gates and before `held-queue`, and claims it audits all six. Gate 7 remains the stated position; Gate 3 is not substituted absent explicit confirmation. The submission describes the Sabbath state as **HELD-423**, security sequence only: staged, not executed; no structural code changes, deploy, verification, or run. It says five items are staged in `persuasions.jsonl` as `kind=persuasion`, `status=proposal`.
+The submission places `security-audit` after all six preceding substantive gates and before `held-queue`, and claims it audits all six. Gate 7 remains the stated position; Gate 3 is not substituted absent explicit confirmation. The submission describes the Sabbath state as **HELD-423**, security sequence only: staged, not executed; no structural code changes, deploy, verification, or run. It says five items are staged in `persuasions.jsonl` as `kind=persuasion`, `status=proposal`. Staged or proposed does not mean approved or executed; completion/locking language in the artifact table below is reproduced as an unverified source claim only.
 
 ### Nine staged artifact claims
 
