@@ -16,6 +16,71 @@ describe('dependency-injected historical curator', () => {
     expect(() => sanitize({ ...event, title: '<script>not history</script>' })).toThrow('plain text')
   })
 
+  it('rejects catalogs with excessive provenance references', () => {
+    expect(() => sanitize({
+      ...event,
+      provenance: Array.from({ length: 26 }, (_, index) => `archive:${index}`),
+    })).toThrow('provenance exceeds the supported limit')
+  })
+
+  it('records deployment authorization before calling the relational core', async () => {
+    const catalog = mockCatalog()
+    const governanceEvents: string[] = []
+    const runtime = await awakenAgentNativeCore({
+      catalog,
+      relational: {
+        async initialize() {},
+        async deployComponent() { governanceEvents.push('deploy') },
+      },
+      curator: mockCurator(),
+      governanceLedger: {
+        append(record) { governanceEvents.push(record.event) },
+      },
+      stewardId: 'steward-1',
+      systemPrompt: 'Preserve historical fidelity.',
+    })
+
+    await catalog.emit(event)
+
+    expect(governanceEvents).toEqual([
+      'CURATION_DEPLOYMENT_AUTHORIZED',
+      'deploy',
+      'CURATION_DEPLOYED',
+    ])
+    runtime.stop()
+  })
+
+  it('rejects curator provenance exceeding count and item-size limits', async () => {
+    for (const provenance of [
+      Array.from({ length: 26 }, () => event.provenance[0]),
+      ['x'.repeat(513)],
+    ]) {
+      const catalog = mockCatalog()
+      const relational = mockRelational()
+      const governanceLedger = mockGovernanceLedger()
+      const sourceEvent = provenance[0].length > 512
+        ? { ...event, provenance }
+        : event
+      const runtime = await awakenAgentNativeCore({
+        catalog,
+        relational,
+        curator: {
+          async curate() {
+            return { summary: event.summary, provenance, completeness: 'complete' }
+          },
+        },
+        governanceLedger,
+        stewardId: 'steward-1',
+        systemPrompt: 'Preserve historical fidelity.',
+      })
+
+      await expect(catalog.emit(sourceEvent)).rejects.toThrow('provenance exceeds the supported')
+      expect(relational.deployed).toHaveLength(0)
+      expect(governanceLedger.records.at(-1)?.event).toBe('CURATION_REJECTED')
+      runtime.stop()
+    }
+  })
+
   it('mounts the archive, sanitizes history, and deploys one data-only component', async () => {
     const catalog = mockCatalog()
     const relational = mockRelational()
@@ -48,6 +113,11 @@ describe('dependency-injected historical curator', () => {
       completeness: 'complete',
     })
     expect(governanceLedger.records).toEqual([{
+      event: 'CURATION_DEPLOYMENT_AUTHORIZED',
+      stewardId: 'steward-1',
+      historicalEventId: event.id,
+      timestamp: '2026-10-03T00:00:00.000Z',
+    }, {
       event: 'CURATION_DEPLOYED',
       stewardId: 'steward-1',
       historicalEventId: event.id,
@@ -86,7 +156,7 @@ describe('dependency-injected historical curator', () => {
       relational,
       curator: {
         async curate() {
-          return { summary: '<script>untrusted</script>', provenance: event.provenance, completeness: 'incomplete' }
+          return { summary: 'partial record missing source details', provenance: event.provenance, completeness: 'incomplete' }
         },
       },
       governanceLedger,
@@ -94,7 +164,7 @@ describe('dependency-injected historical curator', () => {
       systemPrompt: 'Do not fabricate.',
     })
 
-    await expect(catalog.emit(event)).rejects.toThrow('plain text')
+    await expect(catalog.emit(event)).rejects.toThrow('record incomplete')
     expect(relational.deployed).toHaveLength(0)
     expect(governanceLedger.records[0].event).toBe('CURATION_REJECTED')
     runtime.stop()
