@@ -16,3 +16,8 @@ token.json
 **/credentials.json
 **/token.json
 **/.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
