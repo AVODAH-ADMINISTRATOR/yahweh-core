@@ -11,14 +11,9 @@ import json
 import os
 import re
 import threading
-
-try:
-    import fcntl
-except ImportError:
-    fcntl = None
 from dataclasses import asdict, dataclass
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from council_os.constraints import CharterViolation
@@ -35,23 +30,27 @@ def sha256_hex(payload: str) -> str:
 
 
 def _lock_file(descriptor: int) -> None:
-    if fcntl is not None:
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
-        return
-    import msvcrt
+    if os.name == "nt":
+        import msvcrt
 
-    os.lseek(descriptor, 0, os.SEEK_SET)
-    msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
 
 
 def _unlock_file(descriptor: int) -> None:
-    if fcntl is not None:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
-        return
-    import msvcrt
+    if os.name == "nt":
+        import msvcrt
 
-    os.lseek(descriptor, 0, os.SEEK_SET)
-    msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
 
 
 @dataclass
