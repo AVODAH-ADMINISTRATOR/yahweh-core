@@ -272,3 +272,64 @@ class LifecycleLedger:
                 return False
             prev = entry.entry_hash
         return True
+
+
+class SerializedLedger:
+    """Thread-safe and process-safe JSONL ledger with serialized appends."""
+
+    def __init__(self, ledger_path: str | Path) -> None:
+        self.ledger_path = Path(ledger_path)
+        self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.RLock()
+        if not self.ledger_path.exists():
+            os.close(os.open(self.ledger_path, os.O_WRONLY | os.O_CREAT, 0o600))
+
+    @staticmethod
+    def _lock_file(handle: Any) -> None:
+        try:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        except ImportError:
+            import msvcrt
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+
+    @staticmethod
+    def _unlock_file(handle: Any) -> None:
+        try:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        except ImportError:
+            import msvcrt
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+
+    def write(self, record: Dict[str, Any]) -> None:
+        line = json.dumps(record, sort_keys=True) + "\n"
+        with self._lock:
+            with open(self.ledger_path, "a", encoding="utf-8") as handle:
+                self._lock_file(handle)
+                try:
+                    handle.write(line)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                finally:
+                    self._unlock_file(handle)
+
+    def read_all(self) -> List[Dict[str, Any]]:
+        records: List[Dict[str, Any]] = []
+        with self._lock:
+            with open(self.ledger_path, "r", encoding="utf-8") as handle:
+                self._lock_file(handle)
+                try:
+                    for line in handle:
+                        line = line.strip()
+                        if line:
+                            records.append(json.loads(line))
+                finally:
+                    self._unlock_file(handle)
+        return records
