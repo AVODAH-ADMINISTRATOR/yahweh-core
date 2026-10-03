@@ -10,6 +10,12 @@ import hashlib
 import json
 import os
 import threading
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
+    import msvcrt
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from datetime import datetime, timezone
@@ -26,6 +32,62 @@ def _utc_now() -> str:
 
 def sha256_hex(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+class SerializedLedger:
+    """Thread-safe and process-safe JSON-lines ledger (RLock + file lock, fsync)."""
+
+    def __init__(self, ledger_path: str):
+        self.ledger_path = Path(ledger_path)
+        self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.RLock()
+        if not self.ledger_path.exists():
+            self.ledger_path.touch(mode=0o600)
+
+    @staticmethod
+    def _acquire_file_lock(fileobj) -> None:
+        if fcntl is not None:
+            fcntl.flock(fileobj.fileno(), fcntl.LOCK_EX)
+        else:
+            fileobj.seek(0)
+            msvcrt.locking(fileobj.fileno(), msvcrt.LK_LOCK, 1)
+
+    @staticmethod
+    def _release_file_lock(fileobj) -> None:
+        if fcntl is not None:
+            fcntl.flock(fileobj.fileno(), fcntl.LOCK_UN)
+        else:
+            fileobj.seek(0)
+            msvcrt.locking(fileobj.fileno(), msvcrt.LK_UNLCK, 1)
+
+    def write(self, record: Dict[str, Any]) -> None:
+        line = json.dumps(record) + "\n"
+        with self._lock:
+            with open(self.ledger_path, "a", encoding="utf-8") as f:
+                self._acquire_file_lock(f)
+                try:
+                    f.write(line)
+                    f.flush()
+                    os.fsync(f.fileno())
+                finally:
+                    self._release_file_lock(f)
+
+    def read_all(self) -> List[Dict[str, Any]]:
+        records: List[Dict[str, Any]] = []
+        with self._lock:
+            with open(self.ledger_path, "r", encoding="utf-8") as f:
+                self._acquire_file_lock(f)
+                try:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            records.append(json.loads(line))
+                finally:
+                    self._release_file_lock(f)
+        return records
+
+    def count(self) -> int:
+        return len(self.read_all())
 
 
 @dataclass
