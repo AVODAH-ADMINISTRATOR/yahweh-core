@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
 from council_os.kernel import CouncilOSKernel
-from council_os.ledger import LifecycleLedger
+from council_os.ledger import LifecycleLedger, sha256_hex
 from council_os.manifests import ManifestRegistry
 from council_os.stewardship_policy import check_action_policy, sanitize_text
 
@@ -59,6 +60,45 @@ def test_jsonl_ledger_persists_hashed_domain_ids_and_detects_tampering(tmp_path:
     with pytest.raises(CharterViolation, match="integrity verification failed"):
         LifecycleLedger(path)
 
+
+
+def test_jsonl_ledger_serializes_concurrent_appends_across_instances(tmp_path: Path):
+    path = tmp_path / "concurrent-ledger.jsonl"
+    ledgers = [LifecycleLedger(path) for _ in range(24)]
+    with ThreadPoolExecutor(max_workers=len(ledgers)) as executor:
+        entries = list(executor.map(
+            lambda pair: pair[1].append(KernelDomain.LEDGER, f"EVENT_{pair[0]}"),
+            enumerate(ledgers),
+        ))
+
+    restored = LifecycleLedger(path)
+    assert sorted(entry.index for entry in entries) == list(range(len(ledgers)))
+    assert len(restored) == len(ledgers)
+    assert restored.verify_chain()
+
+
+def test_seal_verification_binds_marker_to_target_entry_id(tmp_path: Path):
+    path = tmp_path / "sealed-ledger.jsonl"
+    ledger = LifecycleLedger(path)
+    target = ledger.append(KernelDomain.LEDGER, "ORIGINAL")
+    ledger.seal(target.index)
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    marker = rows[1]
+    marker["payload_hash"] = sha256_hex(json.dumps(
+        {"sealed_index": target.index, "sealed_entry_id": "not-the-target-id"},
+        sort_keys=True,
+        default=str,
+    ))
+    material = (
+        f"{marker['index']}:{marker['domain']}:{marker['event']}:{marker['payload_hash']}:"
+        f"{marker['prev_hash']}:{marker['timestamp']}:{marker['sealed']}"
+    )
+    marker["entry_hash"] = sha256_hex(material)
+    marker["entry_id"] = LifecycleLedger.record_id(marker["index"], marker["domain"], marker["entry_hash"])
+    path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+
+    with pytest.raises(CharterViolation, match="integrity verification failed"):
+        LifecycleLedger(path)
 
 def test_boot_seal_and_audit_report_detect_tampering():
     kernel = CouncilOSKernel(signing_key=b"test signing key")

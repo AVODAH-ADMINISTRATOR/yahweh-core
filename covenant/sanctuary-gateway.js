@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sanitize = sanitize;
+const MAX_PROVENANCE_REFERENCES = 100;
 const FIELD_LIMITS = {
     id: 256,
     title: 240,
@@ -35,6 +36,9 @@ function sanitize(input) {
     const record = input;
     if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
         throw new Error('Invalid historical event: provenance is required');
+    }
+    if (record.provenance.length > MAX_PROVENANCE_REFERENCES) {
+        throw new Error(`Invalid historical event: provenance exceeds ${MAX_PROVENANCE_REFERENCES} references`);
     }
     return {
         id: cleanText(record.id, 'id', FIELD_LIMITS.id),
