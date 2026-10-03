@@ -6,6 +6,8 @@ export interface HistoricalEvent {
   provenance: string[]
 }
 
+export const MAX_PROVENANCE_REFERENCES = 50
+
 const FIELD_LIMITS = {
   id: 256,
   title: 240,
@@ -43,6 +45,9 @@ export function sanitize(input: unknown): HistoricalEvent {
   const record = input as Record<string, unknown>
   if (!Array.isArray(record.provenance) || record.provenance.length === 0) {
     throw new Error('Invalid historical event: provenance is required')
+  }
+  if (record.provenance.length > MAX_PROVENANCE_REFERENCES) {
+    throw new Error('Invalid historical event: too many provenance references')
   }
 
   return {

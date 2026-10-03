@@ -137,3 +137,33 @@ def test_kernel_can_use_a_persistent_jsonl_ledger(tmp_path: Path):
     assert restored.verify_chain()
     assert len(restored) == len(kernel.ledger)
     assert any(entry.event == "KERNEL_BOOT" for entry in restored.entries)
+
+
+def test_concurrent_ledger_appends_keep_a_valid_chain(tmp_path):
+    import threading
+
+    ledger = LifecycleLedger(tmp_path / "ledger.jsonl")
+    threads = [
+        threading.Thread(target=ledger.append, args=(KernelDomain.LEDGER, f"E{n}"))
+        for n in range(25)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert len(ledger) == 25
+    assert ledger.verify_chain()
+    assert LifecycleLedger(tmp_path / "ledger.jsonl").verify_chain()
+
+
+def test_seal_rejects_invalid_targets_and_forged_markers():
+    ledger = LifecycleLedger()
+    ledger.append(KernelDomain.LEDGER, "ORIGINAL")
+    for bad in (True, "0", 1.0, -1, 5):
+        with pytest.raises(CharterViolation):
+            ledger.seal(bad)
+    assert not ledger.is_sealed(True)
+    forged = ledger.append(KernelDomain.LEDGER, "LEDGER_ENTRY_SEALED:0")
+    assert not ledger.is_sealed(0)
+    assert not ledger.verify_chain()
+    assert forged.sealed is False
