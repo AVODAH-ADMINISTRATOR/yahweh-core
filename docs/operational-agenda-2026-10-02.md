@@ -155,7 +155,7 @@ The submission attributes these planned code consolidations to `persuasions.json
 | 259–279 | Duplicate | Replace with an attestation single global check-context lookup. |
 | 184–214 | Local state interceptors | Replace with streamlined hook tracking. |
 
-**Repository check:** the available file at `/home/runner/work/yahweh-core/yahweh-core/frontend/src/App.tsx` is 43 lines long, so the reported line ranges do not match that file. `persuasions.json`, `persuasions.jsonl`, `gate-seal-schema.json`, and `verify_gate_seal.py` were not found in the repository. No code changes have been made for these proposals.
+**Repository check:** the available file at `frontend/src/App.tsx` is 43 lines long, so the reported line ranges do not match that file. `persuasions.json`, `persuasions.jsonl`, `gate-seal-schema.json`, and `verify_gate_seal.py` were not found in the repository. No code changes have been made for these proposals.
 
 ### Provenance and confidence metrics
 

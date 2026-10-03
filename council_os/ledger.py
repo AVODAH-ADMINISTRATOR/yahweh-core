@@ -10,10 +10,11 @@ import hashlib
 import json
 import os
 import threading
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
@@ -116,15 +117,9 @@ class LifecycleLedger:
         self._entries: List[LedgerEntry] = []
         self._value_memory: Optional[str] = None
         self._append_lock = threading.RLock()
-        if self.storage_path is not None and self.storage_path.exists():
-            try:
-                for line in self.storage_path.read_text(encoding="utf-8").splitlines():
-                    if line.strip():
-                        self._entries.append(LedgerEntry(**json.loads(line)))
-            except (OSError, TypeError, ValueError) as exc:
-                raise CharterViolation("invalid JSONL ledger") from exc
-            if not self.verify_chain():
-                raise CharterViolation("JSONL ledger integrity verification failed")
+        if self.storage_path is not None:
+            with self._storage_lock():
+                self._reload_from_storage()
 
     def __len__(self) -> int:
         return len(self._entries)
@@ -138,6 +133,54 @@ class LifecycleLedger:
             return self.GENESIS_HASH
         return self._entries[-1].entry_hash
 
+    @contextmanager
+    def _storage_lock(self) -> Iterator[None]:
+        if self.storage_path is None:
+            yield
+            return
+
+        self.storage_path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path = self.storage_path.with_name(self.storage_path.name + ".lock")
+        descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            if os.name == "nt":
+                import msvcrt
+
+                if os.fstat(descriptor).st_size == 0:
+                    os.write(descriptor, b"\0")
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+                try:
+                    yield
+                finally:
+                    os.lseek(descriptor, 0, os.SEEK_SET)
+                    msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(descriptor, fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
+
+    def _reload_from_storage(self) -> None:
+        if self.storage_path is None:
+            return
+        entries: List[LedgerEntry] = []
+        if self.storage_path.exists():
+            try:
+                for line in self.storage_path.read_text(encoding="utf-8").splitlines():
+                    if line.strip():
+                        entries.append(LedgerEntry(**json.loads(line)))
+            except (OSError, TypeError, ValueError) as exc:
+                raise CharterViolation("invalid JSONL ledger") from exc
+        self._entries = entries
+        if not self._verify_chain():
+            raise CharterViolation("JSONL ledger integrity verification failed")
+
     def append(
         self,
         domain: KernelDomain,
@@ -145,36 +188,51 @@ class LifecycleLedger:
         payload: Optional[Dict[str, Any]] = None,
         sealed: bool = False,
     ) -> LedgerEntry:
-        with self._append_lock:
-            safe = redact_payload(payload or {})
-            payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
-            prev_hash = self.head_hash()
-            index = len(self._entries)
-            timestamp = _utc_now()
-            material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
-            entry_hash = sha256_hex(material)
-            entry = LedgerEntry(
-                index=index,
-                entry_id=self.record_id(index, domain.value, entry_hash),
-                domain=domain.value,
-                event=event,
-                payload_hash=payload_hash,
-                prev_hash=prev_hash,
-                entry_hash=entry_hash,
-                timestamp=timestamp,
-                sealed=sealed,
-                redacted=True,
-            )
-            if self.storage_path is not None:
-                self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-                encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
-                descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-                with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
-                    handle.write(encoded)
-                    handle.flush()
-                    os.fsync(handle.fileno())
-            self._entries.append(entry)
-            return entry
+        if event.startswith("LEDGER_ENTRY_SEALED:"):
+            raise CharterViolation("sealed ledger markers must be created with seal()")
+        with self._append_lock, self._storage_lock():
+            self._reload_from_storage()
+            return self._append_entry(domain, event, payload, sealed)
+
+    def _append_entry(
+        self,
+        domain: KernelDomain,
+        event: str,
+        payload: Optional[Dict[str, Any]] = None,
+        sealed: bool = False,
+    ) -> LedgerEntry:
+        safe = redact_payload(payload or {})
+        payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
+        prev_hash = self.head_hash()
+        index = len(self._entries)
+        timestamp = _utc_now()
+        material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
+        entry_hash = sha256_hex(material)
+        entry = LedgerEntry(
+            index=index,
+            entry_id=self.record_id(index, domain.value, entry_hash),
+            domain=domain.value,
+            event=event,
+            payload_hash=payload_hash,
+            prev_hash=prev_hash,
+            entry_hash=entry_hash,
+            timestamp=timestamp,
+            sealed=sealed,
+            redacted=True,
+        )
+        if self.storage_path is not None:
+            encoded = (json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+            descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+            try:
+                remaining = memoryview(encoded)
+                while remaining:
+                    written = os.write(descriptor, remaining)
+                    remaining = remaining[written:]
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+        self._entries.append(entry)
+        return entry
 
     def _valid_seal_marker(self, index: int, target: LedgerEntry, marker: LedgerEntry) -> bool:
         expected_payload_hash = sha256_hex(json.dumps(
@@ -191,13 +249,14 @@ class LifecycleLedger:
         )
 
     def seal(self, index: int) -> LedgerEntry:
-        with self._append_lock:
+        with self._append_lock, self._storage_lock():
+            self._reload_from_storage()
             if index < 0 or index >= len(self._entries):
                 raise CharterViolation("unknown ledger entry")
-            if self.is_sealed(index):
+            if self._is_sealed(index):
                 raise CharterViolation("ledger entry already sealed")
             target = self._entries[index]
-            marker = self.append(
+            marker = self._append_entry(
                 KernelDomain(target.domain),
                 f"LEDGER_ENTRY_SEALED:{index}",
                 {"sealed_index": index, "sealed_entry_id": target.entry_id},
@@ -207,15 +266,19 @@ class LifecycleLedger:
                 raise CharterViolation("sealed ledger marker mismatch")
             return marker
 
+    def _is_sealed(self, index: int) -> bool:
+        if index < 0 or index >= len(self._entries):
+            return False
+        target = self._entries[index]
+        return target.sealed or any(
+            self._valid_seal_marker(index, target, entry)
+            for entry in self._entries
+        )
+
     def is_sealed(self, index: int) -> bool:
-        with self._append_lock:
-            if index < 0 or index >= len(self._entries):
-                return False
-            target = self._entries[index]
-            return target.sealed or any(
-                self._valid_seal_marker(index, target, entry)
-                for entry in self._entries
-            )
+        with self._append_lock, self._storage_lock():
+            self._reload_from_storage()
+            return self._is_sealed(index)
 
     def rewrite(self, _index: int, _payload: Dict[str, Any]) -> None:
         raise CharterViolation("NO_SEALED_LEDGER_OVERRIDE_WITHOUT_DUAL_CONTROL")
@@ -228,12 +291,13 @@ class LifecycleLedger:
         approval: DualControlApproval,
         payload: Optional[Dict[str, Any]] = None,
     ) -> LedgerEntry:
-        with self._append_lock:
+        with self._append_lock, self._storage_lock():
+            self._reload_from_storage()
             approval.validate()
-            if not self.is_sealed(index):
+            if not self._is_sealed(index):
                 raise CharterViolation("compensation requires a sealed source entry")
             target = self._entries[index]
-            return self.append(
+            return self._append_entry(
                 domain,
                 event,
                 {
@@ -252,7 +316,7 @@ class LifecycleLedger:
     def flush_value_memory(self) -> None:
         self._value_memory = None
 
-    def verify_chain(self) -> bool:
+    def _verify_chain(self) -> bool:
         prev = self.GENESIS_HASH
         for index, entry in enumerate(self._entries):
             if entry.index != index or entry.prev_hash != prev:
@@ -271,4 +335,21 @@ class LifecycleLedger:
             if entry.entry_id != expected_id:
                 return False
             prev = entry.entry_hash
+
+        for marker in self._entries:
+            if not marker.event.startswith("LEDGER_ENTRY_SEALED:"):
+                continue
+            try:
+                target_index = int(marker.event.partition(":")[2])
+            except ValueError:
+                return False
+            if target_index < 0 or target_index >= len(self._entries):
+                return False
+            if not self._valid_seal_marker(target_index, self._entries[target_index], marker):
+                return False
         return True
+
+    def verify_chain(self) -> bool:
+        with self._append_lock, self._storage_lock():
+            self._reload_from_storage()
+            return self._verify_chain()

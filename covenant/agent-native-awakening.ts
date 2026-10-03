@@ -34,12 +34,18 @@ export interface GovernanceRecord {
   timestamp: string
 }
 
+export interface GovernanceReceipt {
+  recordId: string
+  durable: boolean
+}
+
 export interface GovernanceLedger {
-  append(record: GovernanceRecord): Promise<void> | void
+  append(record: GovernanceRecord): Promise<GovernanceReceipt>
 }
 
 const MAX_PROVENANCE_ITEMS = 25
 const MAX_PROVENANCE_LENGTH = 512
+const MAX_PROVENANCE_TOTAL_LENGTH = 5000
 
 export interface AwakeningDependencies {
   catalog: DataCatalog
@@ -88,6 +94,9 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
     }
     return source
   })
+  if (provenance.reduce((total, source) => total + source.length, 0) > MAX_PROVENANCE_TOTAL_LENGTH) {
+    throw new Error('Curator output provenance exceeds the supported total size')
+  }
 
   return {
     type: 'HistoricalCard',
@@ -118,12 +127,19 @@ export async function awakenAgentNativeCore(dependencies: AwakeningDependencies)
       const component = curateDataOnly(event, draft)
       const timestamp = (dependencies.now ?? (() => new Date()))().toISOString()
 
-      await dependencies.governanceLedger.append({
+      const authorization = await dependencies.governanceLedger.append({
         event: 'CURATION_DEPLOYMENT_AUTHORIZED',
         stewardId,
         historicalEventId,
         timestamp,
       })
+      if (
+        authorization?.durable !== true ||
+        typeof authorization.recordId !== 'string' ||
+        !authorization.recordId.trim()
+      ) {
+        throw new Error('Deployment authorization was not durably recorded')
+      }
       await dependencies.relational.deployComponent(component)
       await dependencies.governanceLedger.append({
         event: 'CURATION_DEPLOYED',

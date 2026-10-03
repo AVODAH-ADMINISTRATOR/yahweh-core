@@ -63,8 +63,9 @@ export function mockCurator() {
 export function mockGovernanceLedger() {
   const records: GovernanceRecord[] = []
   const ledger: GovernanceLedger = {
-    append(record) {
+    async append(record) {
       records.push(record)
+      return { recordId: `governance-${records.length}`, durable: true }
     },
   }
   return { ...ledger, records }

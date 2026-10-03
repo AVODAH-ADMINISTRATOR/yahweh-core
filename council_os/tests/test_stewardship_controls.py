@@ -63,23 +63,32 @@ def test_jsonl_ledger_persists_hashed_domain_ids_and_detects_tampering(tmp_path:
 
 def test_jsonl_ledger_serializes_concurrent_writes(tmp_path: Path):
     path = tmp_path / "concurrent-ledger.jsonl"
-    ledger = LifecycleLedger(path)
+    ledgers = [LifecycleLedger(path) for _ in range(8)]
 
     with ThreadPoolExecutor(max_workers=8) as workers:
         entries = list(workers.map(
-            lambda sequence: ledger.append(KernelDomain.LEDGER, f"EVENT_{sequence}"),
+            lambda sequence: ledgers[sequence % len(ledgers)].append(
+                KernelDomain.LEDGER, f"EVENT_{sequence}"
+            ),
             range(100),
         ))
 
     assert sorted(entry.index for entry in entries) == list(range(100))
-    assert ledger.verify_chain()
+    assert ledgers[0].verify_chain()
     assert len(path.read_text(encoding="utf-8").splitlines()) == 100
 
 
 def test_sealed_marker_must_match_the_target_identifier():
     ledger = LifecycleLedger()
     original = ledger.append(KernelDomain.LEDGER, "ORIGINAL")
-    ledger.append(
+    with pytest.raises(CharterViolation, match="must be created with seal"):
+        ledger.append(
+            KernelDomain.LEDGER,
+            f"LEDGER_ENTRY_SEALED:{original.index}",
+            {"sealed_index": original.index, "sealed_entry_id": original.entry_id},
+            sealed=True,
+        )
+    ledger._append_entry(
         KernelDomain.LEDGER,
         f"LEDGER_ENTRY_SEALED:{original.index}",
         {"sealed_index": original.index, "sealed_entry_id": "another-entry"},
@@ -87,6 +96,7 @@ def test_sealed_marker_must_match_the_target_identifier():
     )
 
     assert not ledger.is_sealed(original.index)
+    assert not ledger.verify_chain()
     with pytest.raises(CharterViolation, match="compensation requires a sealed source entry"):
         ledger.compensate_sealed(
             original.index,

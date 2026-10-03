@@ -13,6 +13,7 @@ const FIELD_LIMITS = {
   summary: 5000,
   provenance: 1000,
   provenanceItems: 25,
+  provenanceTotalLength: 5000,
 } as const
 
 function cleanText(value: unknown, field: string, maxLength: number): string {
@@ -49,11 +50,16 @@ export function sanitize(input: unknown): HistoricalEvent {
     throw new Error('Invalid historical event: provenance exceeds the supported limit')
   }
 
+  const provenance = record.provenance.map((item) => cleanText(item, 'provenance', FIELD_LIMITS.provenance))
+  if (provenance.reduce((total, item) => total + item.length, 0) > FIELD_LIMITS.provenanceTotalLength) {
+    throw new Error('Invalid historical event: provenance exceeds the supported total size')
+  }
+
   return {
     id: cleanText(record.id, 'id', FIELD_LIMITS.id),
     title: cleanText(record.title, 'title', FIELD_LIMITS.title),
     date: cleanText(record.date, 'date', FIELD_LIMITS.date),
     summary: cleanSummary(record.summary),
-    provenance: record.provenance.map((item) => cleanText(item, 'provenance', FIELD_LIMITS.provenance)),
+    provenance,
   }
 }

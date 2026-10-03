@@ -4,6 +4,7 @@ exports.awakenAgentNativeCore = awakenAgentNativeCore;
 const sanctuary_gateway_1 = require("./sanctuary-gateway");
 const MAX_PROVENANCE_ITEMS = 25;
 const MAX_PROVENANCE_LENGTH = 512;
+const MAX_PROVENANCE_TOTAL_LENGTH = 5000;
 function curateDataOnly(event, draft) {
     if (draft === null || typeof draft !== 'object' || typeof draft.summary !== 'string') {
         throw new Error('Curator output must be structured historical data');
@@ -38,6 +39,9 @@ function curateDataOnly(event, draft) {
         }
         return source;
     });
+    if (provenance.reduce((total, source) => total + source.length, 0) > MAX_PROVENANCE_TOTAL_LENGTH) {
+        throw new Error('Curator output provenance exceeds the supported total size');
+    }
     return {
         type: 'HistoricalCard',
         eventId: event.id,
@@ -63,12 +67,17 @@ async function awakenAgentNativeCore(dependencies) {
             const draft = await dependencies.curator.curate(event, dependencies.systemPrompt);
             const component = curateDataOnly(event, draft);
             const timestamp = (dependencies.now ?? (() => new Date()))().toISOString();
-            await dependencies.governanceLedger.append({
+            const authorization = await dependencies.governanceLedger.append({
                 event: 'CURATION_DEPLOYMENT_AUTHORIZED',
                 stewardId,
                 historicalEventId,
                 timestamp,
             });
+            if (authorization?.durable !== true ||
+                typeof authorization.recordId !== 'string' ||
+                !authorization.recordId.trim()) {
+                throw new Error('Deployment authorization was not durably recorded');
+            }
             await dependencies.relational.deployComponent(component);
             await dependencies.governanceLedger.append({
                 event: 'CURATION_DEPLOYED',
