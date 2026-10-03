@@ -1,4 +1,4 @@
-import { sanitize, type HistoricalEvent } from './sanctuary-gateway'
+import { FIELD_LIMITS, sanitize, type HistoricalEvent } from './sanctuary-gateway'
 
 export interface CuratorDraft {
   summary: string
@@ -49,6 +49,17 @@ export interface AwakeningDependencies {
   now?: () => Date
 }
 
+const INCOMPLETE_PREFIX = 'record incomplete'
+
+function createWriteQueue() {
+  let tail: Promise<void> = Promise.resolve()
+  return function enqueue<T>(work: () => Promise<T>): Promise<T> {
+    const run = tail.then(work, work)
+    tail = run.then(() => undefined, () => undefined)
+    return run
+  }
+}
+
 function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedComponent {
   if (draft === null || typeof draft !== 'object' || typeof draft.summary !== 'string') {
     throw new Error('Curator output must be structured historical data')
@@ -58,10 +69,10 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
   }
   const summary = draft.summary.normalize('NFKC')
     .replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim()
-  if (!summary || summary.length > 5000 || /<\/?[a-z][^>]*>/i.test(summary)) {
+  if (!summary || summary.length > FIELD_LIMITS.summary || /<\/?[a-z][^>]*>/i.test(summary)) {
     throw new Error('Curator output summary must be bounded plain text')
   }
-  if (draft.completeness === 'incomplete' && !/^record incomplete\b/i.test(summary)) {
+  if (draft.completeness === 'incomplete' && !summary.startsWith(INCOMPLETE_PREFIX)) {
     throw new Error('Incomplete curation must begin with "record incomplete"')
   }
   if (!event.summary && draft.completeness !== 'incomplete') {
@@ -70,11 +81,17 @@ function curateDataOnly(event: HistoricalEvent, draft: CuratorDraft): CuratedCom
   if (!Array.isArray(draft.provenance) || draft.provenance.length === 0) {
     throw new Error('Curator output must include provenance')
   }
+  if (draft.provenance.length > FIELD_LIMITS.provenanceCount) {
+    throw new Error('Curator output provenance exceeds bound')
+  }
 
   const allowedProvenance = new Set(event.provenance)
   const provenance = draft.provenance.map((source) => {
     if (typeof source !== 'string' || !allowedProvenance.has(source)) {
       throw new Error('Curator output contains unsupported provenance')
+    }
+    if (source.length > FIELD_LIMITS.provenance) {
+      throw new Error('Curator output provenance exceeds bound')
     }
     return source
   })
@@ -99,25 +116,37 @@ export async function awakenAgentNativeCore(dependencies: AwakeningDependencies)
   await dependencies.catalog.mount(dependencies.tableName ?? 'eon_generational_records')
   await dependencies.relational.initialize()
 
-  const unsubscribe = dependencies.catalog.subscribe(async (rawEvent) => {
+  const enqueue = createWriteQueue()
+  const unsubscribe = dependencies.catalog.subscribe((rawEvent) => enqueue(async () => {
     let historicalEventId = 'unavailable'
-    let result: GovernanceRecord['event'] = 'CURATION_REJECTED'
+    let deployedRecorded = false
+    const timestamp = (dependencies.now ?? (() => new Date()))().toISOString()
     try {
       const event = sanitize(rawEvent)
       historicalEventId = event.id
       const draft = await dependencies.curator.curate(event, dependencies.systemPrompt)
       const component = curateDataOnly(event, draft)
-      await dependencies.relational.deployComponent(component)
-      result = 'CURATION_DEPLOYED'
-    } finally {
+      // Durable governance must be recorded before deployment.
       await dependencies.governanceLedger.append({
-        event: result,
+        event: 'CURATION_DEPLOYED',
         stewardId,
         historicalEventId,
-        timestamp: (dependencies.now ?? (() => new Date()))().toISOString(),
+        timestamp,
       })
+      deployedRecorded = true
+      await dependencies.relational.deployComponent(component)
+    } catch (error) {
+      if (!deployedRecorded) {
+        await dependencies.governanceLedger.append({
+          event: 'CURATION_REJECTED',
+          stewardId,
+          historicalEventId,
+          timestamp,
+        })
+      }
+      throw error
     }
-  })
+  }))
 
   return { status: 'READY', stop: unsubscribe }
 }
