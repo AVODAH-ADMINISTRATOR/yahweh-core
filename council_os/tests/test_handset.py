@@ -137,6 +137,7 @@ def test_cloudflare_enabled_products_are_not_left_out():
         forge.cloudflare.refuse("store_api_token")
     with pytest.raises(CharterViolation):
         forge.cloudflare.refuse("live_account_login")
+    forge.cloudflare.refuse("allowed_edge_action")
     report = forge.produce("op-1")
     assert report["cloudflare"] == EDGE_ACCOUNT
     assert report["cloudflare_left_out"] is False

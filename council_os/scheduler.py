@@ -145,5 +145,5 @@ class AdvancedScheduler:
         }
 
     def refuse(self, action: str) -> None:
-        if action in FORBIDDEN_SCHEDULE_ACTIONS or action:
+        if action in FORBIDDEN_SCHEDULE_ACTIONS:
             raise CharterViolation("KILL_SWITCH_REQUIRED")

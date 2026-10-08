@@ -105,5 +105,5 @@ class PersonalWorkspace:
         }
 
     def refuse(self, action: str) -> None:
-        if action in FORBIDDEN_WORKSPACE_ACTIONS or action:
+        if action in FORBIDDEN_WORKSPACE_ACTIONS:
             raise CharterViolation("HOST_HARDWARE_DECOUPLED")

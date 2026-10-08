@@ -123,5 +123,5 @@ class OptiplexHousing:
         return profile
 
     def refuse(self, action: str) -> None:
-        if action in FORBIDDEN_SKELETON_ACTIONS or action:
+        if action in FORBIDDEN_SKELETON_ACTIONS:
             raise CharterViolation("HOST_HARDWARE_DECOUPLED")
