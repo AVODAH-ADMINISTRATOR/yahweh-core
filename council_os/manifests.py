@@ -25,6 +25,12 @@ class HumanApproval:
     approval_id: str = field(default_factory=lambda: str(uuid4()))
 
 
+@dataclass(frozen=True)
+class BootSeal:
+    body_hash: str
+    signature: str
+
+
 @dataclass
 class SignedManifest:
     node_role: str
@@ -44,6 +50,18 @@ class ManifestRegistry:
         self.signing_key = signing_key
         self.ledger = ledger
         self.synced: List[SignedManifest] = []
+
+    def seal_boot(self, body: Dict[str, Any]) -> BootSeal:
+        canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), default=str)
+        digest = sha256_hex(canonical)
+        signature = hmac.new(self.signing_key, canonical.encode("utf-8"), hashlib.sha256).hexdigest()
+        return BootSeal(body_hash=digest, signature=signature)
+
+    def verify_boot_seal(self, body: Dict[str, Any], seal: BootSeal) -> bool:
+        expected = self.seal_boot(body)
+        return hmac.compare_digest(expected.body_hash, seal.body_hash) and hmac.compare_digest(
+            expected.signature, seal.signature
+        )
 
     def sign(self, node_role: str, node_id: str, domain: KernelDomain, body: Dict[str, Any]) -> SignedManifest:
         if node_role not in self.VALID_ROLES:

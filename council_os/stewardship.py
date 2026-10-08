@@ -14,6 +14,7 @@ from council_os.constraints import CharterViolation
 from council_os.covenant import BiblicalCovenant
 from council_os.domains import CHARTER_CITATIONS, KernelDomain
 from council_os.ledger import LifecycleLedger
+from council_os.stewardship_policy import check_action_policy, sanitize_text
 
 STEWARD_ASSIGNMENT = "earth_care_as_designed"
 PRINCIPAL = "God"
@@ -69,9 +70,8 @@ class EarthSteward:
         return payload
 
     def record_decree(self, decree: str) -> Dict[str, Any]:
-        text = decree.strip()
-        if not text:
-            raise CharterViolation("empty decree")
+        text = sanitize_text(decree, field="decree")
+        check_action_policy("record_decree", text)
         self.covenant.refuse_deception(text)
         if "waive" in text.lower() or "personalized will" in text.lower():
             raise CharterViolation("NO_CHARTER_WAIVER")

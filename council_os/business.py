@@ -14,7 +14,8 @@ from council_os.constraints import CharterViolation
 from council_os.domains import CHARTER_CITATIONS, KernelDomain
 from council_os.hitl import Proposal, ScholarSignoff
 from council_os.kernel import CouncilOSKernel
-from council_os.ledger import DualControlApproval
+from council_os.ledger import DualControlApproval, sha256_hex
+from council_os.stewardship_policy import check_action_policy, sanitize_text
 
 BOARD_ROLES: FrozenSet[str] = frozenset({"operator", "scholar", "treasurer", "steward"})
 
@@ -87,8 +88,9 @@ class BusinessGovernance:
             raise CharterViolation("business board must open before motions")
         if kind not in MOTION_KINDS:
             raise CharterViolation(f"unknown motion kind {kind}")
-        if not actor_id or not title:
-            raise CharterViolation("human actor required")
+        actor_id = sanitize_text(actor_id, field="actor_id", max_length=256)
+        title = sanitize_text(title, field="title")
+        check_action_policy(kind, title)
         lowered = title.lower()
         if "enemy" in lowered or "another principal" in lowered:
             raise CharterViolation("REFUSE_ENEMY_SERVITUDE")
@@ -137,6 +139,16 @@ class BusinessGovernance:
             if dual is None:
                 raise CharterViolation("NO_AI_COMMIT_FUNDS")
             dual.validate()
+            self.kernel.ledger.append(
+                KernelDomain.TREASURY,
+                "DUAL_WITNESS_APPROVAL",
+                {
+                    "motion_id": motion_id,
+                    "witness_a_hash": sha256_hex(dual.actor_a),
+                    "witness_b_hash": sha256_hex(dual.actor_b),
+                    "reason_hash": sha256_hex(dual.reason.strip()),
+                },
+            )
             proposal = self.kernel.propose(
                 Proposal(
                     domain=KernelDomain.TREASURY,
