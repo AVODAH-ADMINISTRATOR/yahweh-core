@@ -10,10 +10,11 @@ import hashlib
 import json
 import os
 import threading
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
@@ -117,14 +118,60 @@ class LifecycleLedger:
         self._value_memory: Optional[str] = None
         self._append_lock = threading.RLock()
         if self.storage_path is not None and self.storage_path.exists():
+            with self._append_lock, self._file_lock():
+                self._reload_from_disk()
+
+    @contextmanager
+    def _file_lock(self) -> Iterator[None]:
+        if self.storage_path is None:
+            yield
+            return
+
+        lock_path = self.storage_path.with_name(f"{self.storage_path.name}.lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with lock_path.open("a+b") as lock_file:
             try:
-                for line in self.storage_path.read_text(encoding="utf-8").splitlines():
-                    if line.strip():
-                        self._entries.append(LedgerEntry(**json.loads(line)))
-            except (OSError, TypeError, ValueError) as exc:
-                raise CharterViolation("invalid JSONL ledger") from exc
-            if not self.verify_chain():
-                raise CharterViolation("JSONL ledger integrity verification failed")
+                import fcntl
+
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                lock_kind = "fcntl"
+            except (ImportError, OSError, AttributeError):
+                try:
+                    import msvcrt
+
+                    lock_file.seek(0, os.SEEK_END)
+                    if lock_file.tell() == 0:
+                        lock_file.write(b"\0")
+                        lock_file.flush()
+                    lock_file.seek(0)
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+                    lock_kind = "msvcrt"
+                except (ImportError, OSError, AttributeError):
+                    lock_kind = None
+
+            try:
+                yield
+            finally:
+                if lock_kind == "fcntl":
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                elif lock_kind == "msvcrt":
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+
+    def _reload_from_disk(self) -> None:
+        if self.storage_path is None or not self.storage_path.exists():
+            self._entries = []
+            return
+        try:
+            entries = [
+                LedgerEntry(**json.loads(line))
+                for line in self.storage_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        except (OSError, TypeError, ValueError) as exc:
+            raise CharterViolation("invalid JSONL ledger") from exc
+        self._entries = entries
+        if not self.verify_chain():
+            raise CharterViolation("JSONL ledger integrity verification failed")
 
     def __len__(self) -> int:
         return len(self._entries)
@@ -146,35 +193,48 @@ class LifecycleLedger:
         sealed: bool = False,
     ) -> LedgerEntry:
         with self._append_lock:
-            safe = redact_payload(payload or {})
-            payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
-            prev_hash = self.head_hash()
-            index = len(self._entries)
-            timestamp = _utc_now()
-            material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
-            entry_hash = sha256_hex(material)
-            entry = LedgerEntry(
-                index=index,
-                entry_id=self.record_id(index, domain.value, entry_hash),
-                domain=domain.value,
-                event=event,
-                payload_hash=payload_hash,
-                prev_hash=prev_hash,
-                entry_hash=entry_hash,
-                timestamp=timestamp,
-                sealed=sealed,
-                redacted=True,
-            )
             if self.storage_path is not None:
                 self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-                encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
-                descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-                with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
-                    handle.write(encoded)
-                    handle.flush()
-                    os.fsync(handle.fileno())
-            self._entries.append(entry)
-            return entry
+                with self._file_lock():
+                    self._reload_from_disk()
+                    return self._append_locked(domain, event, payload, sealed)
+            return self._append_locked(domain, event, payload, sealed)
+
+    def _append_locked(
+        self,
+        domain: KernelDomain,
+        event: str,
+        payload: Optional[Dict[str, Any]],
+        sealed: bool,
+    ) -> LedgerEntry:
+        safe = redact_payload(payload or {})
+        payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
+        prev_hash = self.head_hash()
+        index = len(self._entries)
+        timestamp = _utc_now()
+        material = f"{index}:{domain.value}:{event}:{payload_hash}:{prev_hash}:{timestamp}:{sealed}"
+        entry_hash = sha256_hex(material)
+        entry = LedgerEntry(
+            index=index,
+            entry_id=self.record_id(index, domain.value, entry_hash),
+            domain=domain.value,
+            event=event,
+            payload_hash=payload_hash,
+            prev_hash=prev_hash,
+            entry_hash=entry_hash,
+            timestamp=timestamp,
+            sealed=sealed,
+            redacted=True,
+        )
+        if self.storage_path is not None:
+            encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
+            descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+            with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
+                handle.write(encoded)
+                handle.flush()
+                os.fsync(handle.fileno())
+        self._entries.append(entry)
+        return entry
 
     def _valid_seal_marker(self, index: int, target: LedgerEntry, marker: LedgerEntry) -> bool:
         expected_payload_hash = sha256_hex(json.dumps(
@@ -192,20 +252,27 @@ class LifecycleLedger:
 
     def seal(self, index: int) -> LedgerEntry:
         with self._append_lock:
-            if index < 0 or index >= len(self._entries):
-                raise CharterViolation("unknown ledger entry")
-            if self.is_sealed(index):
-                raise CharterViolation("ledger entry already sealed")
-            target = self._entries[index]
-            marker = self.append(
-                KernelDomain(target.domain),
-                f"LEDGER_ENTRY_SEALED:{index}",
-                {"sealed_index": index, "sealed_entry_id": target.entry_id},
-                sealed=True,
-            )
-            if not self._valid_seal_marker(index, target, marker):
-                raise CharterViolation("sealed ledger marker mismatch")
-            return marker
+            if self.storage_path is not None:
+                with self._file_lock():
+                    self._reload_from_disk()
+                    return self._seal_locked(index)
+            return self._seal_locked(index)
+
+    def _seal_locked(self, index: int) -> LedgerEntry:
+        if index < 0 or index >= len(self._entries):
+            raise CharterViolation("unknown ledger entry")
+        if self.is_sealed(index):
+            raise CharterViolation("ledger entry already sealed")
+        target = self._entries[index]
+        marker = self._append_locked(
+            KernelDomain(target.domain),
+            f"LEDGER_ENTRY_SEALED:{index}",
+            {"sealed_index": index, "sealed_entry_id": target.entry_id},
+            True,
+        )
+        if self.storage_path is not None and not self._valid_seal_marker(index, target, marker):
+            raise CharterViolation("sealed ledger marker mismatch")
+        return marker
 
     def is_sealed(self, index: int) -> bool:
         with self._append_lock:
@@ -272,3 +339,7 @@ class LifecycleLedger:
                 return False
             prev = entry.entry_hash
         return True
+
+
+class SerializedLedger(LifecycleLedger):
+    """Append-only serialization addressing Copilot Finding #1."""

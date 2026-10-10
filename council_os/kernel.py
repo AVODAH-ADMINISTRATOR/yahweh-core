@@ -20,7 +20,7 @@ from council_os.fidelity import FidelityGate, detect_harm
 from council_os.health import DomainMesh
 from council_os.hitl import HITLGate, Proposal, ScholarSignoff
 from council_os.jobs import AuthorizedJob, HumanAuthorization, JobScheduler
-from council_os.ledger import DualControlApproval, LifecycleLedger
+from council_os.ledger import DualControlApproval, SerializedLedger
 from council_os.manifests import HumanApproval, ManifestRegistry, SignedManifest
 from council_os.policy import compile_policy
 from council_os.stewardship_policy import check_action_policy
@@ -30,7 +30,7 @@ class CouncilOSKernel:
     def __init__(self, signing_key: bytes | None = None, ledger_path: str | os.PathLike[str] | None = None) -> None:
         self.lock = CharterLock()
         self.lock.assert_intact()
-        self.ledger = LifecycleLedger(ledger_path)
+        self.ledger = SerializedLedger(ledger_path)
         self.mesh = DomainMesh(self.ledger)
         self.jobs = JobScheduler(self.mesh, self.ledger)
         self.hitl = HITLGate(self.ledger)
