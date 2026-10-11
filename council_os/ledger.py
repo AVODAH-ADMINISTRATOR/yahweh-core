@@ -6,6 +6,7 @@ compensating record. AI workers cannot retain value amounts.
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
@@ -18,6 +19,38 @@ from typing import Any, Dict, List, Optional
 from council_os.constraints import CharterViolation
 from council_os.domains import KernelDomain
 from council_os.stewardship_policy import check_action_policy, sanitize_text
+
+
+MAX_PROVENANCE_ENTRIES: int = 100_000
+
+
+class LedgerPathError(CharterViolation):
+    """Raised when a ledger path fails base boundary validation."""
+
+
+class LedgerCapacityError(CharterViolation):
+    """Raised when the ledger exceeds its configured capacity."""
+
+
+def validate_path_boundary(target_path: Path, base_dir: Optional[Path] = None) -> Path:
+    """Resolve target_path and ensure it stays within base_dir.
+
+    Without a base_dir, raw ".." components are rejected.
+    """
+    target_path = Path(target_path)
+    if base_dir is None:
+        if ".." in target_path.parts:
+            raise LedgerPathError(f"Path traversal guard triggered: '{target_path}'")
+        return target_path.resolve()
+    resolved_base = Path(base_dir).resolve()
+    resolved_target = (resolved_base / target_path).resolve()
+    try:
+        resolved_target.relative_to(resolved_base)
+    except ValueError:
+        raise LedgerPathError(
+            f"Path traversal guard triggered: '{target_path}' is outside base directory '{resolved_base}'"
+        ) from None
+    return resolved_target
 
 
 def _utc_now() -> str:
@@ -111,8 +144,20 @@ class LifecycleLedger:
         mnemonic_digit = cls.numerology_digit(sequence, code)
         return f"{sequence:06d}-{code}-{mnemonic_digit}-{sha256_hex(entry_hash)[:12]}"
 
-    def __init__(self, storage_path: str | Path | None = None) -> None:
-        self.storage_path = Path(storage_path) if storage_path is not None else None
+    def __init__(
+        self,
+        storage_path: str | Path | None = None,
+        base_dir: str | Path | None = None,
+        max_entries: int = MAX_PROVENANCE_ENTRIES,
+    ) -> None:
+        self.storage_path = (
+            validate_path_boundary(
+                Path(storage_path), Path(base_dir) if base_dir is not None else None
+            )
+            if storage_path is not None
+            else None
+        )
+        self.max_entries = max_entries
         self._entries: List[LedgerEntry] = []
         self._value_memory: Optional[str] = None
         self._append_lock = threading.RLock()
@@ -123,6 +168,10 @@ class LifecycleLedger:
                         self._entries.append(LedgerEntry(**json.loads(line)))
             except (OSError, TypeError, ValueError) as exc:
                 raise CharterViolation("invalid JSONL ledger") from exc
+            if len(self._entries) > self.max_entries:
+                raise LedgerCapacityError(
+                    f"provenance ledger capacity limit ({self.max_entries}) exceeded"
+                )
             if not self.verify_chain():
                 raise CharterViolation("JSONL ledger integrity verification failed")
 
@@ -146,6 +195,10 @@ class LifecycleLedger:
         sealed: bool = False,
     ) -> LedgerEntry:
         with self._append_lock:
+            if len(self._entries) >= self.max_entries:
+                raise LedgerCapacityError(
+                    f"provenance ledger capacity limit ({self.max_entries}) reached"
+                )
             safe = redact_payload(payload or {})
             payload_hash = sha256_hex(json.dumps(safe, sort_keys=True, default=str))
             prev_hash = self.head_hash()
@@ -170,9 +223,13 @@ class LifecycleLedger:
                 encoded = json.dumps(entry.to_dict(), sort_keys=True, separators=(",", ":")) + "\n"
                 descriptor = os.open(self.storage_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
                 with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
-                    handle.write(encoded)
-                    handle.flush()
-                    os.fsync(handle.fileno())
+                    try:
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                        handle.write(encoded)
+                        handle.flush()
+                        os.fsync(handle.fileno())
+                    finally:
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
             self._entries.append(entry)
             return entry
 

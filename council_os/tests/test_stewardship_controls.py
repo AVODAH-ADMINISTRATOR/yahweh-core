@@ -173,3 +173,30 @@ def test_kernel_can_use_a_persistent_jsonl_ledger(tmp_path: Path):
     assert restored.verify_chain()
     assert len(restored) == len(kernel.ledger)
     assert any(entry.event == "KERNEL_BOOT" for entry in restored.entries)
+
+
+def test_ledger_path_traversal_rejected(tmp_path):
+    import pytest
+    from council_os.ledger import LedgerPathError
+
+    with pytest.raises(LedgerPathError):
+        LifecycleLedger(tmp_path / ".." / "escape.jsonl", base_dir=tmp_path)
+    with pytest.raises(LedgerPathError):
+        LifecycleLedger("../escape.jsonl")
+
+
+def test_ledger_capacity_enforced(tmp_path):
+    import pytest
+    from council_os.ledger import LedgerCapacityError
+
+    ledger = LifecycleLedger(tmp_path / "l.jsonl", base_dir=tmp_path, max_entries=1)
+    ledger.append(KernelDomain.LEDGER, "A")
+    with pytest.raises(LedgerCapacityError):
+        ledger.append(KernelDomain.LEDGER, "B")
+
+
+def test_ledger_locked_append_persists(tmp_path):
+    path = tmp_path / "l.jsonl"
+    ledger = LifecycleLedger(path)
+    ledger.append(KernelDomain.LEDGER, "A")
+    assert len(LifecycleLedger(path)) == 1
